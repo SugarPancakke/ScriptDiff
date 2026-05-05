@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Diff Viewer</title>
+
+<style>
+body {
+    margin: 0;
+    background: #0d1117;
+    color: #c9d1d9;
+    display: flex;
+}
+
+.sidebar {
+    width: 300px;
+    border-right: 1px solid #30363d;
+    overflow-y: auto;
+    height: 100vh;
+}
+
+.file {
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #30363d;
+}
+
+.file:hover {
+    background: #161b22;
+}
+
+.viewer {
+    flex: 1;
+    padding: 20px;
+    overflow: auto;
+}
+
+.row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    font-family: monospace;
+}
+
+.left { background: #0b0f14; padding: 5px; }
+.right { background: #0b0f14; padding: 5px; }
+
+.add { background: #033a16; color: #7ee787; }
+.remove { background: #3a0d0d; color: #ff7b72; }
+.replace { background: #3a2f00; color: #f2cc60; }
+</style>
+</head>
+
+<body>
+
+<div class="sidebar" id="list"></div>
+<div class="viewer" id="viewer">Select a file</div>
+
+<script src="diff.js"></script>
+
+</body>
+</html>
