@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Folder Diff Viewer</title>
+
+<style>
+body {
+    margin: 0;
+    background: #0d1117;
+    color: #c9d1d9;
+}
+
+header {
+    padding: 10px;
+    background: #161b22;
+    display: flex;
+    gap: 10px;
+}
+
+button {
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+.container {
+    display: flex;
+    height: calc(100vh - 50px);
+}
+
+.sidebar {
+    width: 300px;
+    border-right: 1px solid #30363d;
+    overflow-y: auto;
+}
+
+.file {
+    padding: 8px;
+    cursor: pointer;
+    border-bottom: 1px solid #30363d;
+}
+
+.file:hover {
+    background: #161b22;
+}
+
+.viewer {
+    flex: 1;
+    padding: 10px;
+    overflow: auto;
+}
+
+.row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    font-family: monospace;
+}
+
+.left {
+    background: #0b0f14;
+    padding: 4px;
+    border-right: 1px solid #30363d;
+}
+
+.right {
+    background: #0b0f14;
+    padding: 4px;
+}
+
+.add { background: #033a16; color: #7ee787; }
+.remove { background: #3a0d0d; color: #ff7b72; }
+.change { background: #3a2f00; color: #f2cc60; }
+</style>
+</head>
+
+<body>
+
+<header>
+    <button onclick="pickOld()">Select OLD Folder</button>
+    <button onclick="pickNew()">Select NEW Folder</button>
+</header>
+
+<div class="container">
+    <div class="sidebar" id="list"></div>
+    <div class="viewer" id="viewer">Pick folders to start</div>
+</div>
+
+<script>
+let oldFiles = {};
+let newFiles = {};
+
+async function readFolder(dirHandle) {
+    const files = {};
+
+    for await (const [name, handle] of dirHandle.entries()) {
+
+        if (handle.kind === "file") {
+            const file = await handle.getFile();
+            const text = await file.text();
+            files[name] = text.split("\n");
+        }
+    }
+
+    return files;
+}
+
+async function pickOld() {
+    const dir = await window.showDirectoryPicker();
+    oldFiles = await readFolder(dir);
+    refresh();
+}
+
+async function pickNew() {
+    const dir = await window.showDirectoryPicker();
+    newFiles = await readFolder(dir);
+    refresh();
+}
+
+function diffLines(oldL, newL) {
+    const max = Math.max(oldL.length, newL.length);
+    const result = [];
+
+    for (let i = 0; i < max; i++) {
+        const o = oldL[i] || "";
+        const n = newL[i] || "";
+
+        if (o === n) {
+            result.push({type:"same", left:o, right:n});
+        }
+        else if (!o) {
+            result.push({type:"add", left:"", right:n});
+        }
+        else if (!n) {
+            result.push({type:"remove", left:o, right:""});
+        }
+        else {
+            result.push({type:"change", left:o, right:n});
+        }
+    }
+
+    return result;
+}
+
+function refresh() {
+    const list = document.getElementById("list");
+    list.innerHTML = "";
+
+    const all = new Set([...Object.keys(oldFiles), ...Object.keys(newFiles)]);
+
+    all.forEach(file => {
+
+        const div = document.createElement("div");
+        div.className = "file";
+        div.textContent = file;
+
+        div.onclick = () => showFile(file);
+
+        list.appendChild(div);
+    });
+}
+
+function showFile(file) {
+
+    const oldL = oldFiles[file] || [];
+    const newL = newFiles[file] || [];
+
+    const diff = diffLines(oldL, newL);
+
+    let html = `<h3>${file}</h3>`;
+
+    diff.forEach(d => {
+
+        html += `<div class="row">`;
+
+        if (d.type === "same") {
+            html += `<div class="left">${escape(d.left)}</div>`;
+            html += `<div class="right">${escape(d.right)}</div>`;
+        }
+
+        if (d.type === "add") {
+            html += `<div class="left"></div>`;
+            html += `<div class="right add">+ ${escape(d.right)}</div>`;
+        }
+
+        if (d.type === "remove") {
+            html += `<div class="left remove">- ${escape(d.left)}</div>`;
+            html += `<div class="right"></div>`;
+        }
+
+        if (d.type === "change") {
+            html += `<div class="left change">${escape(d.left)}</div>`;
+            html += `<div class="right change">${escape(d.right)}</div>`;
+        }
+
+        html += `</div>`;
+    });
+
+    document.getElementById("viewer").innerHTML = html;
+}
+
+function escape(str) {
+    return (str || "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;");
+}
+</script>
+
+</body>
+</html>
