@@ -2,11 +2,12 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Folder Diff Viewer</title>
+<title>Folder Diff (Drag & Drop)</title>
 
 <style>
 body {
     margin: 0;
+    font-family: Arial;
     background: #0d1117;
     color: #c9d1d9;
 }
@@ -14,18 +15,18 @@ body {
 header {
     padding: 10px;
     background: #161b22;
-    display: flex;
-    gap: 10px;
 }
 
-button {
-    padding: 8px 12px;
-    cursor: pointer;
+.dropzone {
+    border: 2px dashed #30363d;
+    margin: 10px;
+    padding: 20px;
+    text-align: center;
 }
 
 .container {
     display: flex;
-    height: calc(100vh - 50px);
+    height: 80vh;
 }
 
 .sidebar {
@@ -56,16 +57,8 @@ button {
     font-family: monospace;
 }
 
-.left {
-    background: #0b0f14;
-    padding: 4px;
-    border-right: 1px solid #30363d;
-}
-
-.right {
-    background: #0b0f14;
-    padding: 4px;
-}
+.left { background: #0b0f14; padding: 4px; border-right: 1px solid #30363d; }
+.right { background: #0b0f14; padding: 4px; }
 
 .add { background: #033a16; color: #7ee787; }
 .remove { background: #3a0d0d; color: #ff7b72; }
@@ -76,69 +69,76 @@ button {
 <body>
 
 <header>
-    <button onclick="pickOld()">Select OLD Folder</button>
-    <button onclick="pickNew()">Select NEW Folder</button>
+Drag OLD folder → top box | Drag NEW folder → bottom box
 </header>
+
+<div class="dropzone" id="oldZone">Drop OLD folder here</div>
+<div class="dropzone" id="newZone">Drop NEW folder here</div>
 
 <div class="container">
     <div class="sidebar" id="list"></div>
-    <div class="viewer" id="viewer">Pick folders to start</div>
+    <div class="viewer" id="viewer">Load folders to start</div>
 </div>
 
 <script>
 let oldFiles = {};
 let newFiles = {};
 
-async function readFolder(dirHandle) {
-    const files = {};
+function handleDrop(zone, callback) {
+    zone.addEventListener("dragover", e => e.preventDefault());
 
-    for await (const [name, handle] of dirHandle.entries()) {
+    zone.addEventListener("drop", async e => {
+        e.preventDefault();
 
-        if (handle.kind === "file") {
-            const file = await handle.getFile();
-            const text = await file.text();
-            files[name] = text.split("\n");
+        const items = [...e.dataTransfer.items];
+
+        const files = {};
+
+        for (const item of items) {
+            const entry = item.webkitGetAsEntry();
+            if (entry) await readEntry(entry, files);
         }
+
+        callback(files);
+    });
+}
+
+async function readEntry(entry, files, path="") {
+    if (entry.isFile) {
+        entry.file(file => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                files[path + entry.name] = reader.result.split("\n");
+            };
+            reader.readAsText(file);
+        });
     }
 
-    return files;
+    if (entry.isDirectory) {
+        const reader = entry.createReader();
+        const entries = await new Promise(res => reader.readEntries(res));
+
+        for (const e of entries) {
+            await readEntry(e, files, path + entry.name + "/");
+        }
+    }
 }
 
-async function pickOld() {
-    const dir = await window.showDirectoryPicker();
-    oldFiles = await readFolder(dir);
-    refresh();
-}
-
-async function pickNew() {
-    const dir = await window.showDirectoryPicker();
-    newFiles = await readFolder(dir);
-    refresh();
-}
-
-function diffLines(oldL, newL) {
-    const max = Math.max(oldL.length, newL.length);
-    const result = [];
+function diff(a, b) {
+    const max = Math.max(a.length, b.length);
+    const out = [];
 
     for (let i = 0; i < max; i++) {
-        const o = oldL[i] || "";
-        const n = newL[i] || "";
+        const x = a[i] || "";
+        const y = b[i] || "";
 
-        if (o === n) {
-            result.push({type:"same", left:o, right:n});
-        }
-        else if (!o) {
-            result.push({type:"add", left:"", right:n});
-        }
-        else if (!n) {
-            result.push({type:"remove", left:o, right:""});
-        }
-        else {
-            result.push({type:"change", left:o, right:n});
-        }
+        if (x === y) out.push({t:"same",l:x,r:y});
+        else if (!x) out.push({t:"add",l:"",r:y});
+        else if (!y) out.push({t:"remove",l:x,r:""});
+        else out.push({t:"change",l:x,r:y});
     }
 
-    return result;
+    return out;
 }
 
 function refresh() {
@@ -147,49 +147,35 @@ function refresh() {
 
     const all = new Set([...Object.keys(oldFiles), ...Object.keys(newFiles)]);
 
-    all.forEach(file => {
-
+    all.forEach(f => {
         const div = document.createElement("div");
         div.className = "file";
-        div.textContent = file;
-
-        div.onclick = () => showFile(file);
-
+        div.textContent = f;
+        div.onclick = () => show(f);
         list.appendChild(div);
     });
 }
 
-function showFile(file) {
+function show(file) {
 
-    const oldL = oldFiles[file] || [];
-    const newL = newFiles[file] || [];
-
-    const diff = diffLines(oldL, newL);
+    const d = diff(oldFiles[file] || [], newFiles[file] || []);
 
     let html = `<h3>${file}</h3>`;
 
-    diff.forEach(d => {
-
+    d.forEach(x => {
         html += `<div class="row">`;
 
-        if (d.type === "same") {
-            html += `<div class="left">${escape(d.left)}</div>`;
-            html += `<div class="right">${escape(d.right)}</div>`;
+        if (x.t === "same") {
+            html += `<div class="left">${x.l}</div><div class="right">${x.r}</div>`;
         }
-
-        if (d.type === "add") {
-            html += `<div class="left"></div>`;
-            html += `<div class="right add">+ ${escape(d.right)}</div>`;
+        if (x.t === "add") {
+            html += `<div class="left"></div><div class="right add">+ ${x.r}</div>`;
         }
-
-        if (d.type === "remove") {
-            html += `<div class="left remove">- ${escape(d.left)}</div>`;
-            html += `<div class="right"></div>`;
+        if (x.t === "remove") {
+            html += `<div class="left remove">- ${x.l}</div><div class="right"></div>`;
         }
-
-        if (d.type === "change") {
-            html += `<div class="left change">${escape(d.left)}</div>`;
-            html += `<div class="right change">${escape(d.right)}</div>`;
+        if (x.t === "change") {
+            html += `<div class="left change">${x.l}</div><div class="right change">${x.r}</div>`;
         }
 
         html += `</div>`;
@@ -198,12 +184,15 @@ function showFile(file) {
     document.getElementById("viewer").innerHTML = html;
 }
 
-function escape(str) {
-    return (str || "")
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;");
-}
+handleDrop(document.getElementById("oldZone"), f => {
+    oldFiles = f;
+    refresh();
+});
+
+handleDrop(document.getElementById("newZone"), f => {
+    newFiles = f;
+    refresh();
+});
 </script>
 
 </body>
