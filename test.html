@@ -17,6 +17,7 @@ body {
   padding: 12px;
   display: flex;
   gap: 12px;
+  align-items: center;
   background: #2a2525;
   position: sticky;
   top: 0;
@@ -36,22 +37,39 @@ body {
   padding: 6px;
 }
 
+/* =========================
+   BUTTON (FIXED)
+========================= */
+
 button {
   background: #4d4747;
   color: white;
   border: none;
-  display: block;
-  margin: 20px auto;
   padding: 12px 30px;
   font-size: 16px;
   cursor: pointer;
+
+  /* IMPORTANT: NOT CENTERED */
+  display: inline-block;
+  margin: 0;
+
   transition: none;
 }
 
+/* no hover change */
+button:hover {
+  background: #4d4747;
+}
+
+/* click-only feedback */
 button:active {
-  transform: scale(0.97);
+  transform: translateY(1px);
   background: #3f3a3a;
 }
+
+/* =========================
+   LAYOUT
+========================= */
 
 .container {
   display: flex;
@@ -72,7 +90,9 @@ button:active {
   cursor: pointer;
 }
 
-.file:hover { background: #3a3434; }
+.file:hover {
+  background: #3a3434;
+}
 
 .tag {
   font-size: 11px;
@@ -91,7 +111,7 @@ button:active {
   overflow-y: auto;
 }
 
-/* 🔥 IMPORTANT: BLOCK SEPARATION */
+/* BLOCKS */
 .block {
   margin-bottom: 12px;
   padding: 8px;
@@ -101,7 +121,7 @@ button:active {
   word-break: break-word;
 }
 
-/* ADD / REMOVE STYLES */
+/* DIFF COLORS */
 .add {
   background: rgba(46,125,50,0.25);
   border-left: 3px solid #2e7d32;
@@ -212,7 +232,7 @@ function compare() {
   });
 }
 
-/* SPLIT INTO STRUCTURAL BLOCKS */
+/* SPLIT */
 function splitBlocks(text) {
   return cleanText(text)
     .split(/(?=\/Game\/|InputAction\.|UI\.|BP_|Ability\.|require|ConsoleAutoChangeLine)/g)
@@ -232,7 +252,7 @@ function show(name) {
   viewer.innerHTML = diffBlocks(A, B);
 }
 
-/* DIFF BLOCKS */
+/* DIFF */
 function diffBlocks(a, b) {
 
   const dp = Array(a.length + 1)
@@ -255,36 +275,29 @@ function diffBlocks(a, b) {
   while (i < a.length && j < b.length) {
 
     if (a[i] === b[j]) {
-      out += wrapBlock(a[i], "");
+      out += wrap(a[i], "");
       i++; j++;
     }
 
     else if (dp[i + 1][j] >= dp[i][j + 1]) {
-      out += wrapBlock(a[i], "remove");
+      out += wrap(a[i], "remove");
       i++;
     }
 
     else {
-      out += wrapBlock(b[j], "add");
+      out += wrap(b[j], "add");
       j++;
     }
   }
 
-  while (i < a.length) {
-    out += wrapBlock(a[i], "remove");
-    i++;
-  }
-
-  while (j < b.length) {
-    out += wrapBlock(b[j], "add");
-    j++;
-  }
+  while (i < a.length) out += wrap(a[i++], "remove");
+  while (j < b.length) out += wrap(b[j++], "add");
 
   return out;
 }
 
-/* BLOCK WRAPPER (VISUAL FIX) */
-function wrapBlock(text, type) {
+/* WRAP */
+function wrap(text, type) {
   return `<div class="block ${type}">${escapeHtml(text)}</div>`;
 }
 
