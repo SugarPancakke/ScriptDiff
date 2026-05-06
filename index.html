@@ -9,14 +9,12 @@ body {
   margin: 0;
   background: #322d2d;
   color: white;
-  font-family: Arial;
 }
 
 /* =========================
    DARK SCROLLBAR THEME
 ========================= */
 
-/* Chrome / Edge / Safari */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -35,7 +33,6 @@ body {
   background: #5a5454;
 }
 
-/* Firefox */
 * {
   scrollbar-width: thin;
   scrollbar-color: #4d4747 #2b2626;
@@ -44,6 +41,7 @@ body {
 /* =========================
    TOP BAR
 ========================= */
+
 .topbar {
   padding: 15px;
   display: flex;
@@ -54,7 +52,6 @@ body {
   top: 0;
 }
 
-/* UPLOAD LABELS */
 .upload-label {
   display: flex;
   flex-direction: column;
@@ -83,7 +80,7 @@ button:hover {
   background: #5a5454;
 }
 
-/* PROGRESS BAR */
+/* PROGRESS */
 #progress {
   flex: 1;
   height: 10px;
@@ -101,6 +98,7 @@ button:hover {
 /* =========================
    MAIN LAYOUT
 ========================= */
+
 .container {
   display: flex;
   height: calc(100vh - 70px);
@@ -137,15 +135,12 @@ button:hover {
 .modified { background: #ef6c00; }
 .unchanged { background: #555; }
 
-/* =========================
-   RIGHT VIEWER (FIXED WRAP)
-========================= */
+/* RIGHT VIEWER */
 .right {
   width: 67%;
   padding: 10px;
   overflow-y: auto;
   overflow-x: hidden;
-
   font-family: monospace;
 
   white-space: pre-wrap;
@@ -153,11 +148,9 @@ button:hover {
   overflow-wrap: anywhere;
 }
 
-/* LINE WRAP FIX */
 .line {
   display: block;
   padding: 2px 4px;
-
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: anywhere;
@@ -196,13 +189,8 @@ button:hover {
 </div>
 
 <div class="container">
-
   <div class="left" id="fileList"></div>
-
-  <div class="right" id="viewer">
-    Select a file
-  </div>
-
+  <div class="right" id="viewer">Select a file</div>
 </div>
 
 <script>
@@ -296,10 +284,8 @@ function compareFiles() {
 
 /* SHOW FILE */
 function showFile(name) {
-
   const oldFile = oldData[name] || "";
   const newFile = newData[name] || "";
-
   const viewer = document.getElementById("viewer");
 
   if (!oldData[name] && newData[name]) {
@@ -315,7 +301,10 @@ function showFile(name) {
   viewer.innerHTML = diff(oldFile, newFile);
 }
 
-/* DIFF */
+/* =========================
+   WORD-LEVEL DIFF (FIX)
+========================= */
+
 function diff(oldStr, newStr) {
   const oldLines = oldStr.split("\n");
   const newLines = newStr.split("\n");
@@ -324,15 +313,34 @@ function diff(oldStr, newStr) {
   const max = Math.max(oldLines.length, newLines.length);
 
   for (let i = 0; i < max; i++) {
-    const o = oldLines[i] || "";
-    const n = newLines[i] || "";
+    const oLine = oldLines[i] || "";
+    const nLine = newLines[i] || "";
 
-    if (o === n) {
-      result += `<span class="line">${escapeHtml(n)}</span>`;
-    } else {
-      if (o) result += `<span class="line remove">${escapeHtml(o)}</span>`;
-      if (n) result += `<span class="line add">${escapeHtml(n)}</span>`;
+    if (oLine === nLine) {
+      result += `<span class="line">${escapeHtml(nLine)}</span>`;
+      continue;
     }
+
+    const oWords = oLine.split(/(\s+)/);
+    const nWords = nLine.split(/(\s+)/);
+
+    const maxWords = Math.max(oWords.length, nWords.length);
+
+    let lineOut = "";
+
+    for (let j = 0; j < maxWords; j++) {
+      const o = oWords[j] || "";
+      const n = nWords[j] || "";
+
+      if (o === n) {
+        lineOut += escapeHtml(n);
+      } else {
+        if (o) lineOut += `<span class="remove">${escapeHtml(o)}</span>`;
+        if (n) lineOut += `<span class="add">${escapeHtml(n)}</span>`;
+      }
+    }
+
+    result += `<span class="line">${lineOut}</span>`;
   }
 
   return result;
