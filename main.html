@@ -1,311 +1,198 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Change Dashboard Diff Tool</title>
+<title>Folder Diff Tool</title>
 
 <style>
-body {
+  body {
     margin: 0;
-    font-family: Arial;
-    background: #0d1117;
-    color: #c9d1d9;
-}
+    background: #322d2d;
+    color: white;
+    display: flex;
+    justify-content: center;
+  }
 
-/* TOP BAR */
-header {
-    padding: 10px;
-    background: #161b22;
+  .wrapper {
+    width: 95%;
+    max-width: 900px;
+    margin-top: 40px;
+  }
+
+  h2 {
+    margin-bottom: 20px;
+  }
+
+  .buttons {
     display: flex;
     gap: 10px;
-    align-items: center;
-}
+    margin-bottom: 20px;
+  }
 
-button {
-    padding: 8px 12px;
-    cursor: pointer;
-    background: #238636;
-    border: none;
+  button {
+    background: #4d4747;
     color: white;
-    border-radius: 4px;
-}
-
-/* STATUS */
-.status {
-    margin-left: auto;
-    font-size: 13px;
-    color: #8b949e;
-}
-
-/* LAYOUT */
-.container {
-    display: flex;
-    height: calc(100vh - 50px);
-}
-
-/* FILE LIST */
-.sidebar {
-    width: 380px;
-    border-right: 1px solid #30363d;
-    overflow-y: auto;
-}
-
-.file {
-    padding: 10px;
-    border-bottom: 1px solid #30363d;
+    border: none;
+    padding: 12px 30px;
     cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
+    font-size: 16px;
+  }
 
-.file:hover {
-    background: #161b22;
-}
+  button:hover {
+    background: #5a5454;
+  }
 
-/* BADGES */
-.badge {
-    font-size: 11px;
-    padding: 3px 6px;
-    border-radius: 4px;
-}
-
-.new { background: #1f6feb; }
-.changed { background: #d29922; }
-.same { background: #238636; }
-.removed { background: #da3633; }
-
-/* CHANGE COUNT */
-.count {
-    font-size: 12px;
-    color: #8b949e;
-}
-
-/* VIEWER */
-.viewer {
-    flex: 1;
+  .output {
+    background: #3d3838;
     padding: 10px;
-    overflow: auto;
-}
-
-/* DIFF */
-.row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    min-height: 400px;
+    white-space: pre-wrap;
     font-family: monospace;
+    overflow-x: auto;
+  }
+
+  .meta {
+    color: #bbbbbb;
     font-size: 13px;
-}
+    margin-bottom: 10px;
+  }
 
-.left {
-    background: #0b0f14;
-    padding: 4px;
-    border-right: 1px solid #30363d;
-}
+  input {
+    display: none;
+  }
 
-.right {
-    background: #0b0f14;
-    padding: 4px;
-}
-
-.add { background: #033a16; color: #7ee787; }
-.remove { background: #3a0d0d; color: #ff7b72; }
-.change { background: #3a2f00; color: #f2cc60; }
-
-.hidden { display: none; }
+  .add { color: #7ee787; }
+  .remove { color: #ff7b72; }
+  .change { color: #f2cc60; }
 </style>
 </head>
 
 <body>
 
-<header>
-    <button onclick="oldInput.click()">Load OLD Folder</button>
-    <button onclick="newInput.click()">Load NEW Folder</button>
+<div class="wrapper">
 
-    <input type="file" id="oldInput" webkitdirectory multiple>
-    <input type="file" id="newInput" webkitdirectory multiple>
+  <h2>Folder Diff Tool</h2>
 
-    <div class="status" id="status">Waiting for folders...</div>
-</header>
+  <div class="meta" id="status">Select folders to compare</div>
 
-<div class="container">
-    <div class="sidebar" id="list"></div>
-    <div class="viewer" id="viewer">Load folders first</div>
+  <div class="buttons">
+    <button onclick="oldInput.click()">Select OLD</button>
+    <button onclick="newInput.click()">Select NEW</button>
+    <button onclick="compare()">Compare</button>
+  </div>
+
+  <input type="file" id="oldInput" webkitdirectory multiple>
+  <input type="file" id="newInput" webkitdirectory multiple>
+
+  <div class="output" id="output"></div>
+
 </div>
 
 <script>
+
 let oldFiles = {};
 let newFiles = {};
-let fileStats = {};
 
-function setStatus(text) {
-    document.getElementById("status").innerText = text;
-}
-
-/* READ FILES */
 function readFiles(fileList, callback) {
 
-    setStatus("Loading files...");
+  const files = {};
+  let loaded = 0;
 
-    const files = {};
-    let loaded = 0;
+  [...fileList].forEach(file => {
 
-    [...fileList].forEach(file => {
+    const reader = new FileReader();
 
-        const reader = new FileReader();
+    reader.onload = () => {
 
-        reader.onload = () => {
+      const path = file.webkitRelativePath || file.name;
+      files[path] = reader.result.split("\n");
 
-            const path = file.webkitRelativePath || file.name;
-            files[path] = reader.result.split("\n");
+      loaded++;
 
-            loaded++;
+      if (loaded === fileList.length) {
+        callback(files);
+      }
+    };
 
-            if (loaded === fileList.length) {
-                setStatus("Loaded " + fileList.length + " files");
-                callback(files);
-            }
-        };
-
-        reader.readAsText(file);
-    });
+    reader.readAsText(file);
+  });
 }
 
-/* INPUT EVENTS */
+/* LOAD OLD */
 document.getElementById("oldInput").addEventListener("change", e => {
-    readFiles(e.target.files, data => {
-        oldFiles = data;
-        buildDashboard();
-    });
+  readFiles(e.target.files, data => {
+    oldFiles = data;
+    document.getElementById("status").innerText = "OLD loaded";
+  });
 });
 
+/* LOAD NEW */
 document.getElementById("newInput").addEventListener("change", e => {
-    readFiles(e.target.files, data => {
-        newFiles = data;
-        buildDashboard();
-    });
+  readFiles(e.target.files, data => {
+    newFiles = data;
+    document.getElementById("status").innerText = "NEW loaded";
+  });
 });
 
-/* CALC DIFF STATS */
-function analyzeDiff(oldL, newL) {
+/* COMPARE */
+function compare() {
 
-    let changes = 0;
+  const all = new Set([
+    ...Object.keys(oldFiles),
+    ...Object.keys(newFiles)
+  ]);
 
-    const max = Math.max(oldL.length, newL.length);
+  let out = "";
+  let changedCount = 0;
 
-    for (let i = 0; i < max; i++) {
-        const a = oldL[i] || "";
-        const b = newL[i] || "";
-
-        if (a !== b) changes++;
-    }
-
-    return changes;
-}
-
-/* BUILD DASHBOARD */
-function buildDashboard() {
-
-    fileStats = {};
-
-    const all = new Set([
-        ...Object.keys(oldFiles),
-        ...Object.keys(newFiles)
-    ]);
-
-    all.forEach(file => {
-
-        const oldL = oldFiles[file] || [];
-        const newL = newFiles[file] || [];
-
-        let type = "same";
-        let changes = 0;
-
-        if (!oldFiles[file]) type = "new";
-        else if (!newFiles[file]) type = "removed";
-        else {
-            changes = analyzeDiff(oldL, newL);
-            if (changes > 0) type = "changed";
-        }
-
-        fileStats[file] = {type, changes};
-    });
-
-    renderList();
-}
-
-/* RENDER FILE LIST */
-function renderList() {
-
-    const list = document.getElementById("list");
-    list.innerHTML = "";
-
-    Object.keys(fileStats)
-        .sort((a,b) => fileStats[b].changes - fileStats[a].changes)
-        .forEach(file => {
-
-        const s = fileStats[file];
-
-        const div = document.createElement("div");
-        div.className = "file";
-
-        let badgeClass = "same";
-        let label = "SAME";
-
-        if (s.type === "new") { badgeClass = "new"; label = "NEW"; }
-        if (s.type === "changed") { badgeClass = "changed"; label = "CHANGED"; }
-        if (s.type === "removed") { badgeClass = "removed"; label = "REMOVED"; }
-
-        div.innerHTML = `
-            <span>${file}</span>
-            <div>
-                <span class="badge ${badgeClass}">${label}</span>
-                <span class="count">${s.changes ? s.changes + " changes" : ""}</span>
-            </div>
-        `;
-
-        div.onclick = () => showFile(file);
-
-        list.appendChild(div);
-    });
-
-    setStatus("Ready — files analyzed");
-}
-
-/* SHOW FILE DIFF */
-function showFile(file) {
+  all.forEach(file => {
 
     const oldL = oldFiles[file] || [];
     const newL = newFiles[file] || [];
 
-    let html = `<h3>${file}</h3>`;
+    if (oldL.join("") === newL.join("")) return;
+
+    changedCount++;
+
+    out += "\n==============================\n";
+    out += file + "\n";
+    out += "==============================\n";
 
     const max = Math.max(oldL.length, newL.length);
 
     for (let i = 0; i < max; i++) {
 
-        const a = oldL[i] || "";
-        const b = newL[i] || "";
+      const a = oldL[i] || "";
+      const b = newL[i] || "";
 
-        html += `<div class="row">`;
-
-        if (a === b) {
-            html += `<div class="left">${a}</div><div class="right">${b}</div>`;
-        }
-        else if (!a) {
-            html += `<div class="left"></div><div class="right add">+ ${b}</div>`;
-        }
-        else if (!b) {
-            html += `<div class="left remove">- ${a}</div><div class="right"></div>`;
-        }
-        else {
-            html += `<div class="left change">${a}</div><div class="right change">${b}</div>`;
-        }
-
-        html += `</div>`;
+      if (a === b) {
+        out += a + "\n";
+      }
+      else if (!a) {
+        out += "+ " + b + "\n";
+      }
+      else if (!b) {
+        out += "- " + a + "\n";
+      }
+      else {
+        out += "! " + b + "\n";
+      }
     }
+  });
 
-    document.getElementById("viewer").innerHTML = html;
+  document.getElementById("output").innerHTML =
+    `<div class="meta">Changed files: ${changedCount}</div><br>` +
+    escape(out);
 }
+
+/* SAFE OUTPUT */
+function escape(str) {
+  return str
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;");
+}
+
 </script>
 
 </body>
