@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Reliable Game Data Diff</title>
+
+<style>
+body {
+  margin: 0;
+  background: #322d2d;
+  color: white;
+  font-family: monospace;
+}
+
+.topbar {
+  padding: 12px;
+  display: flex;
+  gap: 12px;
+  background: #2a2525;
+  position: sticky;
+  top: 0;
+}
+
+.upload-label {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  color: #ccc;
+}
+
+.upload-label input {
+  background: #3d3838;
+  color: white;
+  border: none;
+  padding: 6px;
+}
+
+button {
+  background: #4d4747;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+button:hover { background: #5a5454; }
+
+.container {
+  display: flex;
+  height: calc(100vh - 60px);
+}
+
+.left {
+  width: 30%;
+  background: #2b2626;
+  overflow-y: auto;
+  border-right: 1px solid #444;
+}
+
+.right {
+  width: 70%;
+  padding: 10px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* diff styles */
+.add { background: rgba(46,125,50,0.35); }
+.remove { background: rgba(183,28,28,0.35); }
+
+.file {
+  padding: 8px;
+  border-bottom: 1px solid #3d3838;
+  cursor: pointer;
+}
+
+.file:hover { background: #3a3434; }
+
+.tag {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.modified { background: #ef6c00; }
+.added { background: #2e7d32; }
+.unchanged { background: #555; }
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+
+  <label class="upload-label">
+    Old Folder:
+    <input type="file" id="oldFiles" webkitdirectory multiple>
+  </label>
+
+  <label class="upload-label">
+    New Folder:
+    <input type="file" id="newFiles" webkitdirectory multiple>
+  </label>
+
+  <button onclick="loadFiles()">Compare</button>
+
+</div>
+
+<div class="container">
+  <div class="left" id="fileList"></div>
+  <div class="right" id="viewer">Select file</div>
+</div>
+
+<script>
+let oldData = {};
+let newData = {};
+
+/* CLEAN */
+function cleanText(t) {
+  return t.replace(/[\u0000-\u001F\u007F-\u009F]/g, "").replace(/\r/g, "");
+}
+
+/* PATH FIX */
+function normalize(file) {
+  return (file.webkitRelativePath || file.name).split("/").slice(1).join("/");
+}
+
+/* READ FILES */
+function readFiles(files, store, cb) {
+  let done = 0;
+  if (!files.length) return cb();
+
+  for (let f of files) {
+    const r = new FileReader();
+    r.onload = e => {
+      store[normalize(f)] = cleanText(e.target.result);
+      done++;
+      if (done === files.length) cb();
+    };
+    r.readAsText(f);
+  }
+}
+
+/* LOAD */
+function loadFiles() {
+  oldData = {};
+  newData = {};
+
+  readFiles(oldFiles.files, oldData, () => {
+    readFiles(newFiles.files, newData, compare);
+  });
+}
+
+/* FILE LIST */
+function compare() {
+
+  const list = document.getElementById("fileList");
+  list.innerHTML = "";
+
+  const all = new Set([...Object.keys(oldData), ...Object.keys(newData)]);
+
+  all.forEach(name => {
+
+    const o = oldData[name];
+    const n = newData[name];
+
+    let status = "unchanged";
+    if (!o) status = "added";
+    else if (!n) status = "removed";
+    else if (o !== n) status = "modified";
+
+    const div = document.createElement("div");
+    div.className = "file";
+    div.onclick = () => show(name);
+
+    div.innerHTML = `<span>${name}</span><span class="tag ${status}">${status}</span>`;
+    list.appendChild(div);
+  });
+}
+
+/* =========================
+   STEP 1: STRUCTURE SPLIT
+========================= */
+function splitChunks(text) {
+
+  const pattern = /(?=\/Game\/|InputAction\.|UI\.|BP_|Ability\.|ConsoleAutoChangeLine|require)/g;
+
+  return cleanText(text)
+    .split(pattern)
+    .filter(Boolean);
+}
+
+/* =========================
+   STEP 2: CHUNK DIFF
+========================= */
+function diffChunks(a, b) {
+
+  const dp = Array(a.length + 1)
+    .fill(0)
+    .map(() => Array(b.length + 1).fill(0));
+
+  for (let i = a.length - 1; i >= 0; i--) {
+    for (let j = b.length - 1; j >= 0; j--) {
+      if (a[i] === b[j]) {
+        dp[i][j] = dp[i + 1][j + 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);
+      }
+    }
+  }
+
+  let i = 0, j = 0;
+  let out = "";
+
+  while (i < a.length && j < b.length) {
+
+    if (a[i] === b[j]) {
+      out += `<div>${escapeHtml(a[i])}</div>`;
+      i++; j++;
+    }
+
+    else if (dp[i + 1][j] >= dp[i][j + 1]) {
+      out += `<div class="remove">${escapeHtml(a[i])}</div>`;
+      i++;
+    }
+
+    else {
+      out += `<div class="add">${escapeHtml(b[j])}</div>`;
+      j++;
+    }
+  }
+
+  while (i < a.length) {
+    out += `<div class="remove">${escapeHtml(a[i])}</div>`;
+    i++;
+  }
+
+  while (j < b.length) {
+    out += `<div class="add">${escapeHtml(b[j])}</div>`;
+    j++;
+  }
+
+  return out;
+}
+
+/* =========================
+   STEP 3: CHAR DIFF INSIDE CHUNK
+========================= */
+function charDiff(oldS, newS) {
+
+  const a = Array.from(oldS);
+  const b = Array.from(newS);
+
+  let out = "";
+  const max = Math.max(a.length, b.length);
+
+  for (let i = 0; i < max; i++) {
+    if (a[i] === b[i]) {
+      out += escapeHtml(b[i] || "");
+    } else {
+      if (a[i]) out += `<span class="remove">${escapeHtml(a[i])}</span>`;
+      if (b[i]) out += `<span class="add">${escapeHtml(b[i])}</span>`;
+    }
+  }
+
+  return out;
+}
+
+/* SHOW FILE */
+function show(name) {
+
+  const a = oldData[name] || "";
+  const b = newData[name] || "";
+  const viewer = document.getElementById("viewer");
+
+  const A = splitChunks(a);
+  const B = splitChunks(b);
+
+  viewer.innerHTML = diffChunks(A, B);
+}
+
+/* ESCAPE */
+function escapeHtml(t) {
+  return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+</script>
+
+</body>
+</html>
