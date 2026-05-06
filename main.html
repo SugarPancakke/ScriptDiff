@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Script Diff Viewer</title>
+<title>Folder Diff Viewer</title>
 
 <style>
 body {
   margin: 0;
   background: #322d2d;
   color: white;
+  font-family: Arial;
 }
 
 /* TOP BAR */
@@ -22,7 +23,7 @@ body {
   top: 0;
 }
 
-/* LABELED UPLOADS */
+/* UPLOADS */
 .upload-label {
   display: flex;
   flex-direction: column;
@@ -38,6 +39,7 @@ body {
   border: none;
 }
 
+/* BUTTON */
 button {
   background: #4d4747;
   color: white;
@@ -50,7 +52,7 @@ button:hover {
   background: #5a5454;
 }
 
-/* PROGRESS BAR */
+/* PROGRESS */
 #progress {
   flex: 1;
   height: 10px;
@@ -65,7 +67,7 @@ button:hover {
   background: #6aa84f;
 }
 
-/* MAIN LAYOUT */
+/* LAYOUT */
 .container {
   display: flex;
   height: calc(100vh - 70px);
@@ -102,7 +104,7 @@ button:hover {
 .modified { background: #ef6c00; }
 .unchanged { background: #555; }
 
-/* RIGHT VIEWER */
+/* RIGHT VIEW */
 .right {
   width: 67%;
   padding: 10px;
@@ -111,7 +113,7 @@ button:hover {
   white-space: pre-wrap;
 }
 
-/* DIFF */
+/* DIFF STYLES */
 .add {
   background: rgba(46,125,50,0.4);
 }
@@ -133,13 +135,13 @@ button:hover {
 <div class="topbar">
 
   <label class="upload-label">
-    Old Files:
-    <input type="file" id="oldFiles" multiple>
+    Old Folder:
+    <input type="file" id="oldFiles" webkitdirectory multiple>
   </label>
 
   <label class="upload-label">
-    New Files:
-    <input type="file" id="newFiles" multiple>
+    New Folder:
+    <input type="file" id="newFiles" webkitdirectory multiple>
   </label>
 
   <button onclick="loadFiles()">Upload & Compare</button>
@@ -161,9 +163,8 @@ button:hover {
 <script>
 let oldData = {};
 let newData = {};
-let fileStatus = {};
 
-/* READ FILES */
+/* READ FOLDER FILES */
 function readFiles(files, store, callback) {
   let loaded = 0;
 
@@ -176,9 +177,11 @@ function readFiles(files, store, callback) {
     const reader = new FileReader();
 
     reader.onload = e => {
-      store[file.name] = e.target.result;
-      loaded++;
+      // IMPORTANT: use full relative path
+      const path = file.webkitRelativePath || file.name;
+      store[path] = e.target.result;
 
+      loaded++;
       updateProgress(loaded, files.length * 2);
 
       if (loaded === files.length) callback();
@@ -192,7 +195,6 @@ function readFiles(files, store, callback) {
 function loadFiles() {
   oldData = {};
   newData = {};
-  fileStatus = {};
 
   const oldFiles = document.getElementById("oldFiles").files;
   const newFiles = document.getElementById("newFiles").files;
@@ -211,7 +213,7 @@ function updateProgress(done, total) {
   document.getElementById("bar").style.width = percent + "%";
 }
 
-/* COMPARE */
+/* COMPARE FILES */
 function compareFiles() {
 
   const allFiles = new Set([
@@ -232,8 +234,6 @@ function compareFiles() {
     if (!oldFile) status = "added";
     else if (!newFile) status = "removed";
     else if (oldFile !== newFile) status = "modified";
-
-    fileStatus[name] = status;
 
     const div = document.createElement("div");
     div.className = "file";
@@ -277,7 +277,6 @@ function diff(oldStr, newStr) {
   const newLines = newStr.split("\n");
 
   let result = "";
-
   const max = Math.max(oldLines.length, newLines.length);
 
   for (let i = 0; i < max; i++) {
@@ -295,14 +294,14 @@ function diff(oldStr, newStr) {
   return result;
 }
 
-/* SINGLE FILE */
+/* SINGLE FILE HIGHLIGHT */
 function highlight(text, type) {
   return text.split("\n")
     .map(l => `<span class="line ${type}">${escapeHtml(l)}</span>`)
     .join("");
 }
 
-/* ESCAPE */
+/* ESCAPE HTML */
 function escapeHtml(text) {
   return text
     .replace(/&/g, "&amp;")
