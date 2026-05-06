@@ -9,7 +9,6 @@ body {
   margin: 0;
   background: #322d2d;
   color: white;
-  font-family: Arial;
 }
 
 /* SCROLLBAR */
@@ -128,10 +127,9 @@ button:hover {
 .line {
   display: block;
   padding: 2px 4px;
-  white-space: pre-wrap;
 }
 
-/* DIFF */
+/* DIFF COLORS */
 .add {
   background: rgba(46,125,50,0.4);
 }
@@ -172,32 +170,25 @@ button:hover {
 let oldData = {};
 let newData = {};
 
-/* =========================
-   CLEAN TEXT (IMPORTANT FIX)
-========================= */
+/* CLEAN TEXT */
 function cleanText(text) {
   return text
     .replace(/[\u0000-\u001F\u007F-\u009F]/g, "")
     .replace(/\r/g, "");
 }
 
-/* =========================
-   READ FILES (FIXED PATH)
-========================= */
+/* LOAD FILES */
 function readFiles(files, store, callback) {
   let loaded = 0;
 
-  if (!files.length) {
-    callback();
-    return;
-  }
+  if (!files.length) return callback();
 
   for (let file of files) {
     const reader = new FileReader();
 
     reader.onload = e => {
 
-      // REMOVE ROOT FOLDER NAME HERE
+      // REMOVE ROOT FOLDER NAME
       let path = file.webkitRelativePath || file.name;
       path = path.split("/").slice(1).join("/");
 
@@ -213,7 +204,7 @@ function readFiles(files, store, callback) {
   }
 }
 
-/* LOAD */
+/* START */
 function loadFiles() {
   oldData = {};
   newData = {};
@@ -221,8 +212,7 @@ function loadFiles() {
   const oldFiles = document.getElementById("oldFiles").files;
   const newFiles = document.getElementById("newFiles").files;
 
-  const total = oldFiles.length + newFiles.length;
-  if (!total) return;
+  if (!oldFiles.length && !newFiles.length) return;
 
   readFiles(oldFiles, oldData, () => {
     readFiles(newFiles, newData, compareFiles);
@@ -231,11 +221,11 @@ function loadFiles() {
 
 /* PROGRESS */
 function updateProgress(done, total) {
-  const percent = Math.floor((done / total) * 100);
-  document.getElementById("bar").style.width = percent + "%";
+  document.getElementById("bar").style.width =
+    Math.floor((done / total) * 100) + "%";
 }
 
-/* COMPARE */
+/* COMPARE FILES */
 function compareFiles() {
 
   const allFiles = new Set([
@@ -279,13 +269,13 @@ function showFile(name) {
   const newFile = newData[name] || "";
   const viewer = document.getElementById("viewer");
 
-  if (!oldData[name] && newData[name]) {
-    viewer.innerHTML = highlight(newFile, "add");
+  if (!oldData[name]) {
+    viewer.innerHTML = wrap(newFile, "add");
     return;
   }
 
-  if (!newData[name] && oldData[name]) {
-    viewer.innerHTML = highlight(oldFile, "remove");
+  if (!newData[name]) {
+    viewer.innerHTML = wrap(oldFile, "remove");
     return;
   }
 
@@ -293,46 +283,74 @@ function showFile(name) {
 }
 
 /* =========================
-   ROBUST DIFF (WORKS ON MESSY TEXT)
+   REAL DIFF (LCS LINE DIFF)
 ========================= */
 function diff(oldStr, newStr) {
 
   oldStr = cleanText(oldStr);
   newStr = cleanText(newStr);
 
-  const oldWords = oldStr.split(/(\s+)/);
-  const newWords = newStr.split(/(\s+)/);
+  const a = oldStr.split("\n");
+  const b = newStr.split("\n");
 
-  let result = "";
-  const max = Math.max(oldWords.length, newWords.length);
+  const dp = Array(a.length + 1)
+    .fill(null)
+    .map(() => Array(b.length + 1).fill(0));
 
-  for (let i = 0; i < max; i++) {
-    const o = oldWords[i] || "";
-    const n = newWords[i] || "";
-
-    if (o === n) {
-      result += escapeHtml(n);
-    } else {
-      if (o) result += `<span class="remove">${escapeHtml(o)}</span>`;
-      if (n) result += `<span class="add">${escapeHtml(n)}</span>`;
+  for (let i = a.length - 1; i >= 0; i--) {
+    for (let j = b.length - 1; j >= 0; j--) {
+      if (a[i] === b[j]) {
+        dp[i][j] = dp[i + 1][j + 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);
+      }
     }
   }
 
-  return `<span class="line">${result}</span>`;
+  let i = 0, j = 0;
+  let out = "";
+
+  while (i < a.length && j < b.length) {
+
+    if (a[i] === b[j]) {
+      out += `<span class="line">${escape(b[j])}</span>`;
+      i++; j++;
+    }
+
+    else if (dp[i + 1][j] >= dp[i][j + 1]) {
+      out += `<span class="line remove">${escape(a[i])}</span>`;
+      i++;
+    }
+
+    else {
+      out += `<span class="line add">${escape(b[j])}</span>`;
+      j++;
+    }
+  }
+
+  while (i < a.length) {
+    out += `<span class="line remove">${escape(a[i])}</span>`;
+    i++;
+  }
+
+  while (j < b.length) {
+    out += `<span class="line add">${escape(b[j])}</span>`;
+    j++;
+  }
+
+  return out;
 }
 
 /* SINGLE FILE */
-function highlight(text, type) {
-  text = cleanText(text);
-
-  return text
-    .split(/(\s+)/)
-    .map(t => `<span class="line ${type}">${escapeHtml(t)}</span>`)
+function wrap(text, type) {
+  return cleanText(text)
+    .split("\n")
+    .map(l => `<span class="line ${type}">${escape(l)}</span>`)
     .join("");
 }
 
 /* ESCAPE */
-function escapeHtml(text) {
+function escape(text) {
   return text
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
