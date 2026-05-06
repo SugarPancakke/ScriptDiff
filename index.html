@@ -9,6 +9,7 @@ body {
   margin: 0;
   background: #322d2d;
   color: white;
+  font-family: Arial;
 }
 
 /* SCROLLBAR */
@@ -177,7 +178,7 @@ function cleanText(text) {
     .replace(/\r/g, "");
 }
 
-/* LOAD FILES */
+/* READ FILES */
 function readFiles(files, store, callback) {
   let loaded = 0;
 
@@ -204,7 +205,7 @@ function readFiles(files, store, callback) {
   }
 }
 
-/* START */
+/* LOAD */
 function loadFiles() {
   oldData = {};
   newData = {};
@@ -270,12 +271,12 @@ function showFile(name) {
   const viewer = document.getElementById("viewer");
 
   if (!oldData[name]) {
-    viewer.innerHTML = wrap(newFile, "add");
+    viewer.innerHTML = highlight(newFile, "add");
     return;
   }
 
   if (!newData[name]) {
-    viewer.innerHTML = wrap(oldFile, "remove");
+    viewer.innerHTML = highlight(oldFile, "remove");
     return;
   }
 
@@ -283,7 +284,7 @@ function showFile(name) {
 }
 
 /* =========================
-   REAL DIFF (LCS LINE DIFF)
+   CHARACTER-LEVEL DIFF (REAL FIX)
 ========================= */
 function diff(oldStr, newStr) {
 
@@ -297,6 +298,7 @@ function diff(oldStr, newStr) {
     .fill(null)
     .map(() => Array(b.length + 1).fill(0));
 
+  // LCS (line alignment)
   for (let i = a.length - 1; i >= 0; i--) {
     for (let j = b.length - 1; j >= 0; j--) {
       if (a[i] === b[j]) {
@@ -313,44 +315,70 @@ function diff(oldStr, newStr) {
   while (i < a.length && j < b.length) {
 
     if (a[i] === b[j]) {
-      out += `<span class="line">${escape(b[j])}</span>`;
+      out += `<span class="line">${charDiff(a[i], b[j])}</span>`;
       i++; j++;
     }
 
     else if (dp[i + 1][j] >= dp[i][j + 1]) {
-      out += `<span class="line remove">${escape(a[i])}</span>`;
+      out += `<span class="line remove">${escapeHtml(a[i])}</span>`;
       i++;
     }
 
     else {
-      out += `<span class="line add">${escape(b[j])}</span>`;
+      out += `<span class="line add">${escapeHtml(b[j])}</span>`;
       j++;
     }
   }
 
   while (i < a.length) {
-    out += `<span class="line remove">${escape(a[i])}</span>`;
+    out += `<span class="line remove">${escapeHtml(a[i])}</span>`;
     i++;
   }
 
   while (j < b.length) {
-    out += `<span class="line add">${escape(b[j])}</span>`;
+    out += `<span class="line add">${escapeHtml(b[j])}</span>`;
     j++;
   }
 
   return out;
 }
 
+/* =========================
+   LETTER-BY-LETTER DIFF
+========================= */
+function charDiff(oldLine, newLine) {
+
+  let result = "";
+  const max = Math.max(oldLine.length, newLine.length);
+
+  for (let i = 0; i < max; i++) {
+
+    const o = oldLine[i];
+    const n = newLine[i];
+
+    if (o === n) {
+      if (n !== undefined) result += escapeHtml(n);
+    } else {
+      if (o !== undefined) result += `<span class="remove">${escapeHtml(o)}</span>`;
+      if (n !== undefined) result += `<span class="add">${escapeHtml(n)}</span>`;
+    }
+  }
+
+  return result;
+}
+
 /* SINGLE FILE */
-function wrap(text, type) {
-  return cleanText(text)
+function highlight(text, type) {
+  text = cleanText(text);
+
+  return text
     .split("\n")
-    .map(l => `<span class="line ${type}">${escape(l)}</span>`)
+    .map(l => `<span class="line ${type}">${escapeHtml(l)}</span>`)
     .join("");
 }
 
 /* ESCAPE */
-function escape(text) {
+function escapeHtml(text) {
   return text
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
