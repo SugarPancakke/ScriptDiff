@@ -2,11 +2,12 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Folder Diff (Drag & Drop)</title>
+<title>Folder Diff Tool</title>
 
 <style>
 body {
     margin: 0;
+    font-family: Arial;
     background: #0d1117;
     color: #c9d1d9;
 }
@@ -14,18 +15,21 @@ body {
 header {
     padding: 10px;
     background: #161b22;
+    display: flex;
+    gap: 10px;
 }
 
-.dropzone {
-    border: 2px dashed #30363d;
-    margin: 10px;
-    padding: 20px;
-    text-align: center;
+button {
+    padding: 8px 12px;
+    cursor: pointer;
+    background: #238636;
+    border: none;
+    color: white;
 }
 
 .container {
     display: flex;
-    height: 80vh;
+    height: calc(100vh - 50px);
 }
 
 .sidebar {
@@ -62,66 +66,62 @@ header {
 .add { background: #033a16; color: #7ee787; }
 .remove { background: #3a0d0d; color: #ff7b72; }
 .change { background: #3a2f00; color: #f2cc60; }
+
+input { display: none; }
 </style>
 </head>
 
 <body>
 
 <header>
-Drag OLD folder → top box | Drag NEW folder → bottom box
-</header>
+    <button onclick="oldInput.click()">Select OLD Folder</button>
+    <button onclick="newInput.click()">Select NEW Folder</button>
 
-<div class="dropzone" id="oldZone">Drop OLD folder here</div>
-<div class="dropzone" id="newZone">Drop NEW folder here</div>
+    <input type="file" id="oldInput" webkitdirectory multiple>
+    <input type="file" id="newInput" webkitdirectory multiple>
+</header>
 
 <div class="container">
     <div class="sidebar" id="list"></div>
-    <div class="viewer" id="viewer">Load folders to start</div>
+    <div class="viewer" id="viewer">Select folders to start</div>
 </div>
 
 <script>
 let oldFiles = {};
 let newFiles = {};
 
-function handleDrop(zone, callback) {
-    zone.addEventListener("dragover", e => e.preventDefault());
+function readFiles(fileList, callback) {
+    const files = {};
 
-    zone.addEventListener("drop", async e => {
-        e.preventDefault();
+    [...fileList].forEach(file => {
+        const reader = new FileReader();
 
-        const items = [...e.dataTransfer.items];
+        reader.onload = () => {
+            const path = file.webkitRelativePath || file.name;
+            files[path] = reader.result.split("\n");
 
-        const files = {};
+            if (Object.keys(files).length === fileList.length) {
+                callback(files);
+            }
+        };
 
-        for (const item of items) {
-            const entry = item.webkitGetAsEntry();
-            if (entry) await readEntry(entry, files);
-        }
-
-        callback(files);
+        reader.readAsText(file);
     });
 }
 
-async function readEntry(entry, files, path="") {
-    if (entry.isFile) {
-        entry.file(file => {
-            const reader = new FileReader();
-            reader.onload = () => {
-                files[path + entry.name] = reader.result.split("\n");
-            };
-            reader.readAsText(file);
-        });
-    }
+document.getElementById("oldInput").addEventListener("change", e => {
+    readFiles(e.target.files, data => {
+        oldFiles = data;
+        refresh();
+    });
+});
 
-    if (entry.isDirectory) {
-        const reader = entry.createReader();
-        const entries = await new Promise(res => reader.readEntries(res));
-
-        for (const e of entries) {
-            await readEntry(e, files, path + entry.name + "/");
-        }
-    }
-}
+document.getElementById("newInput").addEventListener("change", e => {
+    readFiles(e.target.files, data => {
+        newFiles = data;
+        refresh();
+    });
+});
 
 function diff(a, b) {
     const max = Math.max(a.length, b.length);
@@ -146,11 +146,11 @@ function refresh() {
 
     const all = new Set([...Object.keys(oldFiles), ...Object.keys(newFiles)]);
 
-    all.forEach(f => {
+    all.forEach(file => {
         const div = document.createElement("div");
         div.className = "file";
-        div.textContent = f;
-        div.onclick = () => show(f);
+        div.textContent = file;
+        div.onclick = () => show(file);
         list.appendChild(div);
     });
 }
@@ -182,16 +182,6 @@ function show(file) {
 
     document.getElementById("viewer").innerHTML = html;
 }
-
-handleDrop(document.getElementById("oldZone"), f => {
-    oldFiles = f;
-    refresh();
-});
-
-handleDrop(document.getElementById("newZone"), f => {
-    newFiles = f;
-    refresh();
-});
 </script>
 
 </body>
