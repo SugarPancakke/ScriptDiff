@@ -9,18 +9,33 @@ body {
   margin: 0;
   background: #322d2d;
   color: white;
-  font-family: Arial;
 }
 
 /* TOP BAR */
 .topbar {
   padding: 15px;
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
   background: #2a2525;
   position: sticky;
   top: 0;
+}
+
+/* LABELED UPLOADS */
+.upload-label {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  gap: 4px;
+  color: #ccc;
+}
+
+.upload-label input {
+  color: white;
+  background: #3d3838;
+  padding: 6px;
+  border: none;
 }
 
 button {
@@ -35,11 +50,7 @@ button:hover {
   background: #5a5454;
 }
 
-input[type="file"] {
-  color: white;
-}
-
-/* PROGRESS */
+/* PROGRESS BAR */
 #progress {
   flex: 1;
   height: 10px;
@@ -100,7 +111,7 @@ input[type="file"] {
   white-space: pre-wrap;
 }
 
-/* DIFF STYLES */
+/* DIFF */
 .add {
   background: rgba(46,125,50,0.4);
 }
@@ -120,12 +131,21 @@ input[type="file"] {
 <body>
 
 <div class="topbar">
-  <input type="file" id="oldFiles" multiple>
-  <input type="file" id="newFiles" multiple>
+
+  <label class="upload-label">
+    Old Files:
+    <input type="file" id="oldFiles" multiple>
+  </label>
+
+  <label class="upload-label">
+    New Files:
+    <input type="file" id="newFiles" multiple>
+  </label>
 
   <button onclick="loadFiles()">Upload & Compare</button>
 
   <div id="progress"><div id="bar"></div></div>
+
 </div>
 
 <div class="container">
@@ -142,25 +162,33 @@ input[type="file"] {
 let oldData = {};
 let newData = {};
 let fileStatus = {};
-let currentFile = null;
 
 /* READ FILES */
 function readFiles(files, store, callback) {
   let loaded = 0;
 
+  if (!files.length) {
+    callback();
+    return;
+  }
+
   for (let file of files) {
     const reader = new FileReader();
+
     reader.onload = e => {
       store[file.name] = e.target.result;
       loaded++;
+
       updateProgress(loaded, files.length * 2);
+
       if (loaded === files.length) callback();
     };
+
     reader.readAsText(file);
   }
 }
 
-/* MAIN LOAD */
+/* LOAD */
 function loadFiles() {
   oldData = {};
   newData = {};
@@ -169,9 +197,7 @@ function loadFiles() {
   const oldFiles = document.getElementById("oldFiles").files;
   const newFiles = document.getElementById("newFiles").files;
 
-  let step = 0;
   const total = oldFiles.length + newFiles.length;
-
   if (!total) return;
 
   readFiles(oldFiles, oldData, () => {
@@ -179,7 +205,7 @@ function loadFiles() {
   });
 }
 
-/* PROGRESS BAR */
+/* PROGRESS */
 function updateProgress(done, total) {
   const percent = Math.floor((done / total) * 100);
   document.getElementById("bar").style.width = percent + "%";
@@ -221,24 +247,23 @@ function compareFiles() {
     list.appendChild(div);
   });
 
-  updateProgress(1,1);
+  updateProgress(1, 1);
 }
 
 /* SHOW FILE */
 function showFile(name) {
-  currentFile = name;
 
   const oldFile = oldData[name] || "";
   const newFile = newData[name] || "";
 
   const viewer = document.getElementById("viewer");
 
-  if (!oldFile && newFile) {
+  if (!oldData[name] && newData[name]) {
     viewer.innerHTML = highlight(newFile, "add");
     return;
   }
 
-  if (!newFile && oldFile) {
+  if (!newData[name] && oldData[name]) {
     viewer.innerHTML = highlight(oldFile, "remove");
     return;
   }
@@ -246,7 +271,7 @@ function showFile(name) {
   viewer.innerHTML = diff(oldFile, newFile);
 }
 
-/* SIMPLE DIFF */
+/* DIFF */
 function diff(oldStr, newStr) {
   const oldLines = oldStr.split("\n");
   const newLines = newStr.split("\n");
@@ -270,7 +295,7 @@ function diff(oldStr, newStr) {
   return result;
 }
 
-/* HIGHLIGHT SINGLE FILE */
+/* SINGLE FILE */
 function highlight(text, type) {
   return text.split("\n")
     .map(l => `<span class="line ${type}">${escapeHtml(l)}</span>`)
@@ -280,9 +305,9 @@ function highlight(text, type) {
 /* ESCAPE */
 function escapeHtml(text) {
   return text
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 </script>
 
