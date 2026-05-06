@@ -9,7 +9,6 @@ body {
   margin: 0;
   background: #322d2d;
   color: white;
-  font-family: Arial;
 }
 
 /* TOP BAR */
@@ -23,7 +22,7 @@ body {
   top: 0;
 }
 
-/* UPLOADS */
+/* UPLOAD */
 .upload-label {
   display: flex;
   flex-direction: column;
@@ -104,16 +103,31 @@ button:hover {
 .modified { background: #ef6c00; }
 .unchanged { background: #555; }
 
-/* RIGHT VIEW */
+/* RIGHT PANEL (FIXED WRAPPING) */
 .right {
   width: 67%;
   padding: 10px;
   overflow-y: auto;
+  overflow-x: hidden;
+
   font-family: monospace;
+
   white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
 }
 
-/* DIFF STYLES */
+/* LINE WRAPPING FIX */
+.line {
+  display: block;
+  padding: 2px 4px;
+
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* DIFF COLORS */
 .add {
   background: rgba(46,125,50,0.4);
 }
@@ -121,11 +135,6 @@ button:hover {
 .remove {
   background: rgba(183,28,28,0.4);
   text-decoration: line-through;
-}
-
-.line {
-  display: block;
-  padding: 2px 4px;
 }
 </style>
 </head>
@@ -164,7 +173,7 @@ button:hover {
 let oldData = {};
 let newData = {};
 
-/* READ FOLDER FILES */
+/* READ FILES */
 function readFiles(files, store, callback) {
   let loaded = 0;
 
@@ -177,7 +186,6 @@ function readFiles(files, store, callback) {
     const reader = new FileReader();
 
     reader.onload = e => {
-      // IMPORTANT: use full relative path
       const path = file.webkitRelativePath || file.name;
       store[path] = e.target.result;
 
@@ -213,7 +221,7 @@ function updateProgress(done, total) {
   document.getElementById("bar").style.width = percent + "%";
 }
 
-/* COMPARE FILES */
+/* COMPARE */
 function compareFiles() {
 
   const allFiles = new Set([
@@ -294,14 +302,14 @@ function diff(oldStr, newStr) {
   return result;
 }
 
-/* SINGLE FILE HIGHLIGHT */
+/* SINGLE FILE */
 function highlight(text, type) {
   return text.split("\n")
     .map(l => `<span class="line ${type}">${escapeHtml(l)}</span>`)
     .join("");
 }
 
-/* ESCAPE HTML */
+/* ESCAPE */
 function escapeHtml(text) {
   return text
     .replace(/&/g, "&amp;")
