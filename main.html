@@ -9,9 +9,41 @@ body {
   margin: 0;
   background: #322d2d;
   color: white;
+  font-family: Arial;
 }
 
-/* TOP BAR */
+/* =========================
+   DARK SCROLLBAR THEME
+========================= */
+
+/* Chrome / Edge / Safari */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #2b2626;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4d4747;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #5a5454;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #4d4747 #2b2626;
+}
+
+/* =========================
+   TOP BAR
+========================= */
 .topbar {
   padding: 15px;
   display: flex;
@@ -22,7 +54,7 @@ body {
   top: 0;
 }
 
-/* UPLOAD */
+/* UPLOAD LABELS */
 .upload-label {
   display: flex;
   flex-direction: column;
@@ -51,7 +83,7 @@ button:hover {
   background: #5a5454;
 }
 
-/* PROGRESS */
+/* PROGRESS BAR */
 #progress {
   flex: 1;
   height: 10px;
@@ -66,13 +98,15 @@ button:hover {
   background: #6aa84f;
 }
 
-/* LAYOUT */
+/* =========================
+   MAIN LAYOUT
+========================= */
 .container {
   display: flex;
   height: calc(100vh - 70px);
 }
 
-/* LEFT FILE LIST */
+/* FILE LIST */
 .left {
   width: 33%;
   background: #2b2626;
@@ -103,7 +137,9 @@ button:hover {
 .modified { background: #ef6c00; }
 .unchanged { background: #555; }
 
-/* RIGHT PANEL (FIXED WRAPPING) */
+/* =========================
+   RIGHT VIEWER (FIXED WRAP)
+========================= */
 .right {
   width: 67%;
   padding: 10px;
@@ -117,7 +153,7 @@ button:hover {
   overflow-wrap: anywhere;
 }
 
-/* LINE WRAPPING FIX */
+/* LINE WRAP FIX */
 .line {
   display: block;
   padding: 2px 4px;
