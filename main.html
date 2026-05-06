@@ -2,197 +2,288 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Folder Diff Tool</title>
+<title>Script Diff Viewer</title>
 
 <style>
-  body {
-    margin: 0;
-    background: #322d2d;
-    color: white;
-    display: flex;
-    justify-content: center;
-  }
+body {
+  margin: 0;
+  background: #322d2d;
+  color: white;
+  font-family: Arial;
+}
 
-  .wrapper {
-    width: 95%;
-    max-width: 900px;
-    margin-top: 40px;
-  }
+/* TOP BAR */
+.topbar {
+  padding: 15px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background: #2a2525;
+  position: sticky;
+  top: 0;
+}
 
-  h2 {
-    margin-bottom: 20px;
-  }
+button {
+  background: #4d4747;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  cursor: pointer;
+}
 
-  .buttons {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-  }
+button:hover {
+  background: #5a5454;
+}
 
-  button {
-    background: #4d4747;
-    color: white;
-    border: none;
-    padding: 12px 30px;
-    cursor: pointer;
-    font-size: 16px;
-  }
+input[type="file"] {
+  color: white;
+}
 
-  button:hover {
-    background: #5a5454;
-  }
+/* PROGRESS */
+#progress {
+  flex: 1;
+  height: 10px;
+  background: #3d3838;
+  border-radius: 5px;
+  overflow: hidden;
+}
 
-  .output {
-    background: #3d3838;
-    padding: 10px;
-    min-height: 400px;
-    white-space: pre-wrap;
-    font-family: monospace;
-    overflow-x: auto;
-  }
+#bar {
+  height: 100%;
+  width: 0%;
+  background: #6aa84f;
+}
 
-  .meta {
-    color: #bbbbbb;
-    font-size: 13px;
-    margin-bottom: 10px;
-  }
+/* MAIN LAYOUT */
+.container {
+  display: flex;
+  height: calc(100vh - 70px);
+}
 
-  input {
-    display: none;
-  }
+/* LEFT FILE LIST */
+.left {
+  width: 33%;
+  background: #2b2626;
+  overflow-y: auto;
+  border-right: 1px solid #444;
+}
 
-  .add { color: #7ee787; }
-  .remove { color: #ff7b72; }
-  .change { color: #f2cc60; }
+.file {
+  padding: 10px;
+  border-bottom: 1px solid #3d3838;
+  cursor: pointer;
+  font-family: monospace;
+  display: flex;
+  justify-content: space-between;
+}
+
+.file:hover {
+  background: #3a3434;
+}
+
+.tag {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.added { background: #2e7d32; }
+.modified { background: #ef6c00; }
+.unchanged { background: #555; }
+
+/* RIGHT VIEWER */
+.right {
+  width: 67%;
+  padding: 10px;
+  overflow-y: auto;
+  font-family: monospace;
+  white-space: pre-wrap;
+}
+
+/* DIFF STYLES */
+.add {
+  background: rgba(46,125,50,0.4);
+}
+
+.remove {
+  background: rgba(183,28,28,0.4);
+  text-decoration: line-through;
+}
+
+.line {
+  display: block;
+  padding: 2px 4px;
+}
 </style>
 </head>
 
 <body>
 
-<div class="wrapper">
+<div class="topbar">
+  <input type="file" id="oldFiles" multiple>
+  <input type="file" id="newFiles" multiple>
 
-  <h2>Folder Diff Tool</h2>
+  <button onclick="loadFiles()">Upload & Compare</button>
 
-  <div class="meta" id="status">Select folders to compare</div>
+  <div id="progress"><div id="bar"></div></div>
+</div>
 
-  <div class="buttons">
-    <button onclick="oldInput.click()">Select OLD</button>
-    <button onclick="newInput.click()">Select NEW</button>
-    <button onclick="compare()">Compare</button>
+<div class="container">
+
+  <div class="left" id="fileList"></div>
+
+  <div class="right" id="viewer">
+    Select a file
   </div>
-
-  <input type="file" id="oldInput" webkitdirectory multiple>
-  <input type="file" id="newInput" webkitdirectory multiple>
-
-  <div class="output" id="output"></div>
 
 </div>
 
 <script>
+let oldData = {};
+let newData = {};
+let fileStatus = {};
+let currentFile = null;
 
-let oldFiles = {};
-let newFiles = {};
-
-function readFiles(fileList, callback) {
-
-  const files = {};
+/* READ FILES */
+function readFiles(files, store, callback) {
   let loaded = 0;
 
-  [...fileList].forEach(file => {
-
+  for (let file of files) {
     const reader = new FileReader();
-
-    reader.onload = () => {
-
-      const path = file.webkitRelativePath || file.name;
-      files[path] = reader.result.split("\n");
-
+    reader.onload = e => {
+      store[file.name] = e.target.result;
       loaded++;
-
-      if (loaded === fileList.length) {
-        callback(files);
-      }
+      updateProgress(loaded, files.length * 2);
+      if (loaded === files.length) callback();
     };
-
     reader.readAsText(file);
+  }
+}
+
+/* MAIN LOAD */
+function loadFiles() {
+  oldData = {};
+  newData = {};
+  fileStatus = {};
+
+  const oldFiles = document.getElementById("oldFiles").files;
+  const newFiles = document.getElementById("newFiles").files;
+
+  let step = 0;
+  const total = oldFiles.length + newFiles.length;
+
+  if (!total) return;
+
+  readFiles(oldFiles, oldData, () => {
+    readFiles(newFiles, newData, compareFiles);
   });
 }
 
-/* LOAD OLD */
-document.getElementById("oldInput").addEventListener("change", e => {
-  readFiles(e.target.files, data => {
-    oldFiles = data;
-    document.getElementById("status").innerText = "OLD loaded";
-  });
-});
-
-/* LOAD NEW */
-document.getElementById("newInput").addEventListener("change", e => {
-  readFiles(e.target.files, data => {
-    newFiles = data;
-    document.getElementById("status").innerText = "NEW loaded";
-  });
-});
+/* PROGRESS BAR */
+function updateProgress(done, total) {
+  const percent = Math.floor((done / total) * 100);
+  document.getElementById("bar").style.width = percent + "%";
+}
 
 /* COMPARE */
-function compare() {
+function compareFiles() {
 
-  const all = new Set([
-    ...Object.keys(oldFiles),
-    ...Object.keys(newFiles)
+  const allFiles = new Set([
+    ...Object.keys(oldData),
+    ...Object.keys(newData)
   ]);
 
-  let out = "";
-  let changedCount = 0;
+  const list = document.getElementById("fileList");
+  list.innerHTML = "";
 
-  all.forEach(file => {
+  allFiles.forEach(name => {
 
-    const oldL = oldFiles[file] || [];
-    const newL = newFiles[file] || [];
+    const oldFile = oldData[name];
+    const newFile = newData[name];
 
-    if (oldL.join("") === newL.join("")) return;
+    let status = "unchanged";
 
-    changedCount++;
+    if (!oldFile) status = "added";
+    else if (!newFile) status = "removed";
+    else if (oldFile !== newFile) status = "modified";
 
-    out += "\n==============================\n";
-    out += file + "\n";
-    out += "==============================\n";
+    fileStatus[name] = status;
 
-    const max = Math.max(oldL.length, newL.length);
+    const div = document.createElement("div");
+    div.className = "file";
+    div.onclick = () => showFile(name);
 
-    for (let i = 0; i < max; i++) {
+    div.innerHTML = `
+      <span>${name}</span>
+      <span class="tag ${status}">${status}</span>
+    `;
 
-      const a = oldL[i] || "";
-      const b = newL[i] || "";
-
-      if (a === b) {
-        out += a + "\n";
-      }
-      else if (!a) {
-        out += "+ " + b + "\n";
-      }
-      else if (!b) {
-        out += "- " + a + "\n";
-      }
-      else {
-        out += "! " + b + "\n";
-      }
-    }
+    list.appendChild(div);
   });
 
-  document.getElementById("output").innerHTML =
-    `<div class="meta">Changed files: ${changedCount}</div><br>` +
-    escape(out);
+  updateProgress(1,1);
 }
 
-/* SAFE OUTPUT */
-function escape(str) {
-  return str
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;");
+/* SHOW FILE */
+function showFile(name) {
+  currentFile = name;
+
+  const oldFile = oldData[name] || "";
+  const newFile = newData[name] || "";
+
+  const viewer = document.getElementById("viewer");
+
+  if (!oldFile && newFile) {
+    viewer.innerHTML = highlight(newFile, "add");
+    return;
+  }
+
+  if (!newFile && oldFile) {
+    viewer.innerHTML = highlight(oldFile, "remove");
+    return;
+  }
+
+  viewer.innerHTML = diff(oldFile, newFile);
 }
 
+/* SIMPLE DIFF */
+function diff(oldStr, newStr) {
+  const oldLines = oldStr.split("\n");
+  const newLines = newStr.split("\n");
+
+  let result = "";
+
+  const max = Math.max(oldLines.length, newLines.length);
+
+  for (let i = 0; i < max; i++) {
+    const o = oldLines[i] || "";
+    const n = newLines[i] || "";
+
+    if (o === n) {
+      result += `<span class="line">${escapeHtml(n)}</span>`;
+    } else {
+      if (o) result += `<span class="line remove">${escapeHtml(o)}</span>`;
+      if (n) result += `<span class="line add">${escapeHtml(n)}</span>`;
+    }
+  }
+
+  return result;
+}
+
+/* HIGHLIGHT SINGLE FILE */
+function highlight(text, type) {
+  return text.split("\n")
+    .map(l => `<span class="line ${type}">${escapeHtml(l)}</span>`)
+    .join("");
+}
+
+/* ESCAPE */
+function escapeHtml(text) {
+  return text
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;");
+}
 </script>
 
 </body>
