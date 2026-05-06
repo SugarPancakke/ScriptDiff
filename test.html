@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Reliable Game Data Diff</title>
+<title>Game Data Diff Viewer</title>
 
 <style>
 body {
@@ -12,6 +12,7 @@ body {
   font-family: monospace;
 }
 
+/* TOP BAR */
 .topbar {
   padding: 12px;
   display: flex;
@@ -50,24 +51,13 @@ button:hover { background: #5a5454; }
   height: calc(100vh - 60px);
 }
 
+/* LEFT FILE LIST */
 .left {
   width: 30%;
   background: #2b2626;
   overflow-y: auto;
   border-right: 1px solid #444;
 }
-
-.right {
-  width: 70%;
-  padding: 10px;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-/* diff styles */
-.add { background: rgba(46,125,50,0.35); }
-.remove { background: rgba(183,28,28,0.35); }
 
 .file {
   padding: 8px;
@@ -86,6 +76,36 @@ button:hover { background: #5a5454; }
 .modified { background: #ef6c00; }
 .added { background: #2e7d32; }
 .unchanged { background: #555; }
+
+/* RIGHT VIEWER */
+.right {
+  width: 70%;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+/* 🔥 IMPORTANT: BLOCK SEPARATION */
+.block {
+  margin-bottom: 12px;
+  padding: 8px;
+  border-radius: 6px;
+  background: #2a2525;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ADD / REMOVE STYLES */
+.add {
+  background: rgba(46,125,50,0.25);
+  border-left: 3px solid #2e7d32;
+}
+
+.remove {
+  background: rgba(183,28,28,0.25);
+  border-left: 3px solid #b71c1c;
+  text-decoration: line-through;
+  opacity: 0.85;
+}
 </style>
 </head>
 
@@ -121,23 +141,25 @@ function cleanText(t) {
   return t.replace(/[\u0000-\u001F\u007F-\u009F]/g, "").replace(/\r/g, "");
 }
 
-/* PATH FIX */
+/* PATH */
 function normalize(file) {
   return (file.webkitRelativePath || file.name).split("/").slice(1).join("/");
 }
 
-/* READ FILES */
+/* READ */
 function readFiles(files, store, cb) {
   let done = 0;
   if (!files.length) return cb();
 
   for (let f of files) {
     const r = new FileReader();
+
     r.onload = e => {
       store[normalize(f)] = cleanText(e.target.result);
       done++;
       if (done === files.length) cb();
     };
+
     r.readAsText(f);
   }
 }
@@ -152,7 +174,7 @@ function loadFiles() {
   });
 }
 
-/* FILE LIST */
+/* LIST */
 function compare() {
 
   const list = document.getElementById("fileList");
@@ -174,27 +196,37 @@ function compare() {
     div.className = "file";
     div.onclick = () => show(name);
 
-    div.innerHTML = `<span>${name}</span><span class="tag ${status}">${status}</span>`;
+    div.innerHTML = `
+      <span>${name}</span>
+      <span class="tag ${status}">${status}</span>
+    `;
+
     list.appendChild(div);
   });
 }
 
-/* =========================
-   STEP 1: STRUCTURE SPLIT
-========================= */
-function splitChunks(text) {
-
-  const pattern = /(?=\/Game\/|InputAction\.|UI\.|BP_|Ability\.|ConsoleAutoChangeLine|require)/g;
-
+/* SPLIT INTO STRUCTURAL BLOCKS */
+function splitBlocks(text) {
   return cleanText(text)
-    .split(pattern)
+    .split(/(?=\/Game\/|InputAction\.|UI\.|BP_|Ability\.|require|ConsoleAutoChangeLine)/g)
     .filter(Boolean);
 }
 
-/* =========================
-   STEP 2: CHUNK DIFF
-========================= */
-function diffChunks(a, b) {
+/* SHOW */
+function show(name) {
+
+  const a = oldData[name] || "";
+  const b = newData[name] || "";
+  const viewer = document.getElementById("viewer");
+
+  const A = splitBlocks(a);
+  const B = splitBlocks(b);
+
+  viewer.innerHTML = diffBlocks(A, B);
+}
+
+/* DIFF BLOCKS */
+function diffBlocks(a, b) {
 
   const dp = Array(a.length + 1)
     .fill(0)
@@ -216,68 +248,37 @@ function diffChunks(a, b) {
   while (i < a.length && j < b.length) {
 
     if (a[i] === b[j]) {
-      out += `<div>${escapeHtml(a[i])}</div>`;
+      out += wrapBlock(a[i], "");
       i++; j++;
     }
 
     else if (dp[i + 1][j] >= dp[i][j + 1]) {
-      out += `<div class="remove">${escapeHtml(a[i])}</div>`;
+      out += wrapBlock(a[i], "remove");
       i++;
     }
 
     else {
-      out += `<div class="add">${escapeHtml(b[j])}</div>`;
+      out += wrapBlock(b[j], "add");
       j++;
     }
   }
 
   while (i < a.length) {
-    out += `<div class="remove">${escapeHtml(a[i])}</div>`;
+    out += wrapBlock(a[i], "remove");
     i++;
   }
 
   while (j < b.length) {
-    out += `<div class="add">${escapeHtml(b[j])}</div>`;
+    out += wrapBlock(b[j], "add");
     j++;
   }
 
   return out;
 }
 
-/* =========================
-   STEP 3: CHAR DIFF INSIDE CHUNK
-========================= */
-function charDiff(oldS, newS) {
-
-  const a = Array.from(oldS);
-  const b = Array.from(newS);
-
-  let out = "";
-  const max = Math.max(a.length, b.length);
-
-  for (let i = 0; i < max; i++) {
-    if (a[i] === b[i]) {
-      out += escapeHtml(b[i] || "");
-    } else {
-      if (a[i]) out += `<span class="remove">${escapeHtml(a[i])}</span>`;
-      if (b[i]) out += `<span class="add">${escapeHtml(b[i])}</span>`;
-    }
-  }
-
-  return out;
-}
-
-/* SHOW FILE */
-function show(name) {
-
-  const a = oldData[name] || "";
-  const b = newData[name] || "";
-  const viewer = document.getElementById("viewer");
-
-  const A = splitChunks(a);
-  const B = splitChunks(b);
-
-  viewer.innerHTML = diffChunks(A, B);
+/* BLOCK WRAPPER (VISUAL FIX) */
+function wrapBlock(text, type) {
+  return `<div class="block ${type}">${escapeHtml(text)}</div>`;
 }
 
 /* ESCAPE */
