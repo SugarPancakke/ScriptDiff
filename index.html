@@ -2,29 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Game Data Diff Viewer</title>
+<title>Binary Text Diff Viewer</title>
 
 <style>
 body {
   margin: 0;
   background: #322d2d;
   color: white;
+  font-family: monospace;
 }
 
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-::-webkit-scrollbar-track { background: #2b2626; }
-::-webkit-scrollbar-thumb { background: #4d4747; border-radius: 6px; }
-
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #4d4747 #2b2626;
-}
-
-/* TOP BAR */
 .topbar {
   padding: 15px;
   display: flex;
@@ -44,10 +31,10 @@ body {
 }
 
 .upload-label input {
-  color: white;
   background: #3d3838;
-  padding: 6px;
+  color: white;
   border: none;
+  padding: 6px;
 }
 
 button {
@@ -62,26 +49,39 @@ button:hover {
   background: #5a5454;
 }
 
-/* LAYOUT */
 .container {
   display: flex;
   height: calc(100vh - 70px);
 }
 
 .left {
-  width: 33%;
-  background: #2b2626;
+  width: 30%;
   overflow-y: auto;
+  background: #2b2626;
   border-right: 1px solid #444;
 }
 
-.file {
+.right {
+  width: 70%;
   padding: 10px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* diff styles */
+.add {
+  background: rgba(46,125,50,0.35);
+}
+
+.remove {
+  background: rgba(183,28,28,0.35);
+}
+
+.file {
+  padding: 8px;
   border-bottom: 1px solid #3d3838;
   cursor: pointer;
-  font-family: monospace;
-  display: flex;
-  justify-content: space-between;
 }
 
 .file:hover {
@@ -94,33 +94,9 @@ button:hover {
   border-radius: 4px;
 }
 
-.added { background: #2e7d32; }
 .modified { background: #ef6c00; }
+.added { background: #2e7d32; }
 .unchanged { background: #555; }
-
-.right {
-  width: 67%;
-  padding: 10px;
-  overflow-y: auto;
-  font-family: monospace;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-/* DIFF STYLES */
-.block {
-  display: block;
-  padding: 3px 4px;
-}
-
-.add {
-  background: rgba(46,125,50,0.35);
-}
-
-.remove {
-  background: rgba(183,28,28,0.35);
-  text-decoration: line-through;
-}
 </style>
 </head>
 
@@ -151,36 +127,31 @@ button:hover {
 let oldData = {};
 let newData = {};
 
-/* CLEAN GARBAGE TEXT */
+/* CLEAN (important for Lua dumps) */
 function cleanText(t) {
-  return t
-    .replace(/[\u0000-\u001F\u007F-\u009F]/g, "")
-    .replace(/\r/g, "");
+  return t.replace(/[\u0000-\u001F\u007F-\u009F]/g, "").replace(/\r/g, "");
 }
 
 /* REMOVE ROOT FOLDER */
-function normalizePath(file) {
-  let p = file.webkitRelativePath || file.name;
-  return p.split("/").slice(1).join("/");
+function normalize(file) {
+  return (file.webkitRelativePath || file.name).split("/").slice(1).join("/");
 }
 
 /* READ FILES */
-function readFiles(files, store, done) {
-  let loaded = 0;
-  if (!files.length) return done();
+function readFiles(files, store, cb) {
+  let done = 0;
+  if (!files.length) return cb();
 
-  for (let file of files) {
+  for (let f of files) {
     const r = new FileReader();
 
     r.onload = e => {
-      const path = normalizePath(file);
-      store[path] = cleanText(e.target.result);
-
-      loaded++;
-      if (loaded === files.length) done();
+      store[normalize(f)] = cleanText(e.target.result);
+      done++;
+      if (done === files.length) cb();
     };
 
-    r.readAsText(file);
+    r.readAsText(f);
   }
 }
 
@@ -193,20 +164,17 @@ function loadFiles() {
   const newFiles = document.getElementById("newFiles").files;
 
   readFiles(oldFiles, oldData, () => {
-    readFiles(newFiles, newData, compareFiles);
+    readFiles(newFiles, newData, compare);
   });
 }
 
-/* COMPARE FILE LIST */
-function compareFiles() {
+/* FILE LIST */
+function compare() {
 
   const list = document.getElementById("fileList");
   list.innerHTML = "";
 
-  const all = new Set([
-    ...Object.keys(oldData),
-    ...Object.keys(newData)
-  ]);
+  const all = new Set([...Object.keys(oldData), ...Object.keys(newData)]);
 
   all.forEach(name => {
 
@@ -214,14 +182,13 @@ function compareFiles() {
     const n = newData[name];
 
     let status = "unchanged";
-
     if (!o) status = "added";
     else if (!n) status = "removed";
     else if (o !== n) status = "modified";
 
     const div = document.createElement("div");
     div.className = "file";
-    div.onclick = () => showFile(name);
+    div.onclick = () => show(name);
 
     div.innerHTML = `
       <span>${name}</span>
@@ -233,46 +200,41 @@ function compareFiles() {
 }
 
 /* SHOW FILE */
-function showFile(name) {
+function show(name) {
 
-  const oldFile = oldData[name] || "";
-  const newFile = newData[name] || "";
+  const a = oldData[name] || "";
+  const b = newData[name] || "";
   const viewer = document.getElementById("viewer");
 
-  if (!oldFile) {
-    viewer.innerHTML = renderBlocks(newFile, "add");
+  if (!a) {
+    viewer.innerHTML = render(b, "add");
     return;
   }
 
-  if (!newFile) {
-    viewer.innerHTML = renderBlocks(oldFile, "remove");
+  if (!b) {
+    viewer.innerHTML = render(a, "remove");
     return;
   }
 
-  viewer.innerHTML = blockDiff(oldFile, newFile);
+  viewer.innerHTML = diff(a, b);
 }
 
 /* =========================
-   BLOCK-BASED DIFF (FIX)
-   THIS IS THE IMPORTANT PART
+   TRUE CHARACTER DIFF (CORE)
 ========================= */
-function splitBlocks(text) {
+function diff(oldStr, newStr) {
 
-  // split by meaningful game-data anchors
-  return text.split(
-    /(?=InputAction\.|Ability\.|DA\.|PerformanceItem\.|\/Game\/)/
-  ).filter(Boolean);
-}
+  oldStr = cleanText(oldStr);
+  newStr = cleanText(newStr);
 
-function blockDiff(oldStr, newStr) {
-
-  const a = splitBlocks(oldStr);
-  const b = splitBlocks(newStr);
+  const a = Array.from(oldStr);
+  const b = Array.from(newStr);
 
   const dp = Array(a.length + 1)
     .fill(null)
     .map(() => Array(b.length + 1).fill(0));
 
+  // LCS
   for (let i = a.length - 1; i >= 0; i--) {
     for (let j = b.length - 1; j >= 0; j--) {
       if (a[i] === b[j]) {
@@ -289,43 +251,43 @@ function blockDiff(oldStr, newStr) {
   while (i < a.length && j < b.length) {
 
     if (a[i] === b[j]) {
-      out += `<div class="block">${escapeHtml(b[j])}</div>`;
+      out += escape(a[i]);
       i++; j++;
     }
 
     else if (dp[i + 1][j] >= dp[i][j + 1]) {
-      out += `<div class="block remove">${escapeHtml(a[i])}</div>`;
+      out += `<span class="remove">${escape(a[i])}</span>`;
       i++;
     }
 
     else {
-      out += `<div class="block add">${escapeHtml(b[j])}</div>`;
+      out += `<span class="add">${escape(b[j])}</span>`;
       j++;
     }
   }
 
   while (i < a.length) {
-    out += `<div class="block remove">${escapeHtml(a[i])}</div>`;
+    out += `<span class="remove">${escape(a[i])}</span>`;
     i++;
   }
 
   while (j < b.length) {
-    out += `<div class="block add">${escapeHtml(b[j])}</div>`;
+    out += `<span class="add">${escape(b[j])}</span>`;
     j++;
   }
 
-  return out;
+  return `<div>${out}</div>`;
 }
 
-/* RAW VIEW */
-function renderBlocks(text, type) {
-  return splitBlocks(text)
-    .map(b => `<div class="block ${type}">${escapeHtml(b)}</div>`)
+/* RAW RENDER */
+function render(text, type) {
+  return Array.from(cleanText(text))
+    .map(c => `<span class="${type}">${escape(c)}</span>`)
     .join("");
 }
 
 /* ESCAPE */
-function escapeHtml(t) {
+function escape(t) {
   return t
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
