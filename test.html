@@ -37,16 +37,21 @@ body {
 }
 
 button {
-  ackground: #4d4747;
+  background: #4d4747;
   color: white;
+  border: none;
   display: block;
   margin: 20px auto;
   padding: 12px 30px;
   font-size: 16px;
-  ursor: pointer;
+  cursor: pointer;
+  transition: none;
 }
 
-button:hover { background: #5a5454; }
+button:active {
+  transform: scale(0.97);
+  background: #3f3a3a;
+}
 
 .container {
   display: flex;
