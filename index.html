@@ -9,39 +9,24 @@ body {
   margin: 0;
   background: #322d2d;
   color: white;
+  font-family: Arial;
 }
 
-/* =========================
-   DARK SCROLLBAR THEME
-========================= */
-
+/* SCROLLBAR */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
-
-::-webkit-scrollbar-track {
-  background: #2b2626;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #4d4747;
-  border-radius: 6px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #5a5454;
-}
+::-webkit-scrollbar-track { background: #2b2626; }
+::-webkit-scrollbar-thumb { background: #4d4747; border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: #5a5454; }
 
 * {
   scrollbar-width: thin;
   scrollbar-color: #4d4747 #2b2626;
 }
 
-/* =========================
-   TOP BAR
-========================= */
-
+/* TOP BAR */
 .topbar {
   padding: 15px;
   display: flex;
@@ -67,7 +52,6 @@ body {
   border: none;
 }
 
-/* BUTTON */
 button {
   background: #4d4747;
   color: white;
@@ -80,7 +64,6 @@ button:hover {
   background: #5a5454;
 }
 
-/* PROGRESS */
 #progress {
   flex: 1;
   height: 10px;
@@ -95,16 +78,12 @@ button:hover {
   background: #6aa84f;
 }
 
-/* =========================
-   MAIN LAYOUT
-========================= */
-
+/* LAYOUT */
 .container {
   display: flex;
   height: calc(100vh - 70px);
 }
 
-/* FILE LIST */
 .left {
   width: 33%;
   background: #2b2626;
@@ -121,9 +100,7 @@ button:hover {
   justify-content: space-between;
 }
 
-.file:hover {
-  background: #3a3434;
-}
+.file:hover { background: #3a3434; }
 
 .tag {
   font-size: 11px;
@@ -135,7 +112,7 @@ button:hover {
 .modified { background: #ef6c00; }
 .unchanged { background: #555; }
 
-/* RIGHT VIEWER */
+/* VIEWER */
 .right {
   width: 67%;
   padding: 10px;
@@ -152,11 +129,9 @@ button:hover {
   display: block;
   padding: 2px 4px;
   white-space: pre-wrap;
-  word-break: break-word;
-  overflow-wrap: anywhere;
 }
 
-/* DIFF COLORS */
+/* DIFF */
 .add {
   background: rgba(46,125,50,0.4);
 }
@@ -197,7 +172,18 @@ button:hover {
 let oldData = {};
 let newData = {};
 
-/* READ FILES */
+/* =========================
+   CLEAN TEXT (IMPORTANT FIX)
+========================= */
+function cleanText(text) {
+  return text
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, "")
+    .replace(/\r/g, "");
+}
+
+/* =========================
+   READ FILES (FIXED PATH)
+========================= */
 function readFiles(files, store, callback) {
   let loaded = 0;
 
@@ -210,8 +196,12 @@ function readFiles(files, store, callback) {
     const reader = new FileReader();
 
     reader.onload = e => {
-      const path = file.webkitRelativePath || file.name;
-      store[path] = e.target.result;
+
+      // REMOVE ROOT FOLDER NAME HERE
+      let path = file.webkitRelativePath || file.name;
+      path = path.split("/").slice(1).join("/");
+
+      store[path] = cleanText(e.target.result);
 
       loaded++;
       updateProgress(loaded, files.length * 2);
@@ -284,6 +274,7 @@ function compareFiles() {
 
 /* SHOW FILE */
 function showFile(name) {
+
   const oldFile = oldData[name] || "";
   const newFile = newData[name] || "";
   const viewer = document.getElementById("viewer");
@@ -302,54 +293,41 @@ function showFile(name) {
 }
 
 /* =========================
-   WORD-LEVEL DIFF (FIX)
+   ROBUST DIFF (WORKS ON MESSY TEXT)
 ========================= */
-
 function diff(oldStr, newStr) {
-  const oldLines = oldStr.split("\n");
-  const newLines = newStr.split("\n");
+
+  oldStr = cleanText(oldStr);
+  newStr = cleanText(newStr);
+
+  const oldWords = oldStr.split(/(\s+)/);
+  const newWords = newStr.split(/(\s+)/);
 
   let result = "";
-  const max = Math.max(oldLines.length, newLines.length);
+  const max = Math.max(oldWords.length, newWords.length);
 
   for (let i = 0; i < max; i++) {
-    const oLine = oldLines[i] || "";
-    const nLine = newLines[i] || "";
+    const o = oldWords[i] || "";
+    const n = newWords[i] || "";
 
-    if (oLine === nLine) {
-      result += `<span class="line">${escapeHtml(nLine)}</span>`;
-      continue;
+    if (o === n) {
+      result += escapeHtml(n);
+    } else {
+      if (o) result += `<span class="remove">${escapeHtml(o)}</span>`;
+      if (n) result += `<span class="add">${escapeHtml(n)}</span>`;
     }
-
-    const oWords = oLine.split(/(\s+)/);
-    const nWords = nLine.split(/(\s+)/);
-
-    const maxWords = Math.max(oWords.length, nWords.length);
-
-    let lineOut = "";
-
-    for (let j = 0; j < maxWords; j++) {
-      const o = oWords[j] || "";
-      const n = nWords[j] || "";
-
-      if (o === n) {
-        lineOut += escapeHtml(n);
-      } else {
-        if (o) lineOut += `<span class="remove">${escapeHtml(o)}</span>`;
-        if (n) lineOut += `<span class="add">${escapeHtml(n)}</span>`;
-      }
-    }
-
-    result += `<span class="line">${lineOut}</span>`;
   }
 
-  return result;
+  return `<span class="line">${result}</span>`;
 }
 
 /* SINGLE FILE */
 function highlight(text, type) {
-  return text.split("\n")
-    .map(l => `<span class="line ${type}">${escapeHtml(l)}</span>`)
+  text = cleanText(text);
+
+  return text
+    .split(/(\s+)/)
+    .map(t => `<span class="line ${type}">${escapeHtml(t)}</span>`)
     .join("");
 }
 
