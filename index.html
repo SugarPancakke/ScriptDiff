@@ -2,24 +2,22 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Folder Diff Viewer</title>
+<title>Game Data Diff Viewer</title>
 
 <style>
 body {
   margin: 0;
   background: #322d2d;
   color: white;
-  font-family: Arial;
 }
 
-/* SCROLLBAR */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
+
 ::-webkit-scrollbar-track { background: #2b2626; }
 ::-webkit-scrollbar-thumb { background: #4d4747; border-radius: 6px; }
-::-webkit-scrollbar-thumb:hover { background: #5a5454; }
 
 * {
   scrollbar-width: thin;
@@ -64,20 +62,6 @@ button:hover {
   background: #5a5454;
 }
 
-#progress {
-  flex: 1;
-  height: 10px;
-  background: #3d3838;
-  border-radius: 5px;
-  overflow: hidden;
-}
-
-#bar {
-  height: 100%;
-  width: 0%;
-  background: #6aa84f;
-}
-
 /* LAYOUT */
 .container {
   display: flex;
@@ -100,7 +84,9 @@ button:hover {
   justify-content: space-between;
 }
 
-.file:hover { background: #3a3434; }
+.file:hover {
+  background: #3a3434;
+}
 
 .tag {
   font-size: 11px;
@@ -112,31 +98,27 @@ button:hover {
 .modified { background: #ef6c00; }
 .unchanged { background: #555; }
 
-/* VIEWER */
 .right {
   width: 67%;
   padding: 10px;
   overflow-y: auto;
-  overflow-x: hidden;
   font-family: monospace;
-
   white-space: pre-wrap;
-  word-wrap: break-word;
-  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
-.line {
+/* DIFF STYLES */
+.block {
   display: block;
-  padding: 2px 4px;
+  padding: 3px 4px;
 }
 
-/* DIFF COLORS */
 .add {
-  background: rgba(46,125,50,0.4);
+  background: rgba(46,125,50,0.35);
 }
 
 .remove {
-  background: rgba(183,28,28,0.4);
+  background: rgba(183,28,28,0.35);
   text-decoration: line-through;
 }
 </style>
@@ -156,9 +138,7 @@ button:hover {
     <input type="file" id="newFiles" webkitdirectory multiple>
   </label>
 
-  <button onclick="loadFiles()">Upload & Compare</button>
-
-  <div id="progress"><div id="bar"></div></div>
+  <button onclick="loadFiles()">Compare</button>
 
 </div>
 
@@ -171,37 +151,36 @@ button:hover {
 let oldData = {};
 let newData = {};
 
-/* CLEAN TEXT */
-function cleanText(text) {
-  return text
+/* CLEAN GARBAGE TEXT */
+function cleanText(t) {
+  return t
     .replace(/[\u0000-\u001F\u007F-\u009F]/g, "")
     .replace(/\r/g, "");
 }
 
-/* READ FILES */
-function readFiles(files, store, callback) {
-  let loaded = 0;
+/* REMOVE ROOT FOLDER */
+function normalizePath(file) {
+  let p = file.webkitRelativePath || file.name;
+  return p.split("/").slice(1).join("/");
+}
 
-  if (!files.length) return callback();
+/* READ FILES */
+function readFiles(files, store, done) {
+  let loaded = 0;
+  if (!files.length) return done();
 
   for (let file of files) {
-    const reader = new FileReader();
+    const r = new FileReader();
 
-    reader.onload = e => {
-
-      // REMOVE ROOT FOLDER NAME
-      let path = file.webkitRelativePath || file.name;
-      path = path.split("/").slice(1).join("/");
-
+    r.onload = e => {
+      const path = normalizePath(file);
       store[path] = cleanText(e.target.result);
 
       loaded++;
-      updateProgress(loaded, files.length * 2);
-
-      if (loaded === files.length) callback();
+      if (loaded === files.length) done();
     };
 
-    reader.readAsText(file);
+    r.readAsText(file);
   }
 }
 
@@ -213,40 +192,32 @@ function loadFiles() {
   const oldFiles = document.getElementById("oldFiles").files;
   const newFiles = document.getElementById("newFiles").files;
 
-  if (!oldFiles.length && !newFiles.length) return;
-
   readFiles(oldFiles, oldData, () => {
     readFiles(newFiles, newData, compareFiles);
   });
 }
 
-/* PROGRESS */
-function updateProgress(done, total) {
-  document.getElementById("bar").style.width =
-    Math.floor((done / total) * 100) + "%";
-}
-
-/* COMPARE FILES */
+/* COMPARE FILE LIST */
 function compareFiles() {
-
-  const allFiles = new Set([
-    ...Object.keys(oldData),
-    ...Object.keys(newData)
-  ]);
 
   const list = document.getElementById("fileList");
   list.innerHTML = "";
 
-  allFiles.forEach(name => {
+  const all = new Set([
+    ...Object.keys(oldData),
+    ...Object.keys(newData)
+  ]);
 
-    const oldFile = oldData[name];
-    const newFile = newData[name];
+  all.forEach(name => {
+
+    const o = oldData[name];
+    const n = newData[name];
 
     let status = "unchanged";
 
-    if (!oldFile) status = "added";
-    else if (!newFile) status = "removed";
-    else if (oldFile !== newFile) status = "modified";
+    if (!o) status = "added";
+    else if (!n) status = "removed";
+    else if (o !== n) status = "modified";
 
     const div = document.createElement("div");
     div.className = "file";
@@ -259,8 +230,6 @@ function compareFiles() {
 
     list.appendChild(div);
   });
-
-  updateProgress(1, 1);
 }
 
 /* SHOW FILE */
@@ -270,35 +239,40 @@ function showFile(name) {
   const newFile = newData[name] || "";
   const viewer = document.getElementById("viewer");
 
-  if (!oldData[name]) {
-    viewer.innerHTML = highlight(newFile, "add");
+  if (!oldFile) {
+    viewer.innerHTML = renderBlocks(newFile, "add");
     return;
   }
 
-  if (!newData[name]) {
-    viewer.innerHTML = highlight(oldFile, "remove");
+  if (!newFile) {
+    viewer.innerHTML = renderBlocks(oldFile, "remove");
     return;
   }
 
-  viewer.innerHTML = diff(oldFile, newFile);
+  viewer.innerHTML = blockDiff(oldFile, newFile);
 }
 
 /* =========================
-   CHARACTER-LEVEL DIFF (REAL FIX)
+   BLOCK-BASED DIFF (FIX)
+   THIS IS THE IMPORTANT PART
 ========================= */
-function diff(oldStr, newStr) {
+function splitBlocks(text) {
 
-  oldStr = cleanText(oldStr);
-  newStr = cleanText(newStr);
+  // split by meaningful game-data anchors
+  return text.split(
+    /(?=InputAction\.|Ability\.|DA\.|PerformanceItem\.|\/Game\/)/
+  ).filter(Boolean);
+}
 
-  const a = oldStr.split("\n");
-  const b = newStr.split("\n");
+function blockDiff(oldStr, newStr) {
+
+  const a = splitBlocks(oldStr);
+  const b = splitBlocks(newStr);
 
   const dp = Array(a.length + 1)
     .fill(null)
     .map(() => Array(b.length + 1).fill(0));
 
-  // LCS (line alignment)
   for (let i = a.length - 1; i >= 0; i--) {
     for (let j = b.length - 1; j >= 0; j--) {
       if (a[i] === b[j]) {
@@ -315,71 +289,44 @@ function diff(oldStr, newStr) {
   while (i < a.length && j < b.length) {
 
     if (a[i] === b[j]) {
-      out += `<span class="line">${charDiff(a[i], b[j])}</span>`;
+      out += `<div class="block">${escapeHtml(b[j])}</div>`;
       i++; j++;
     }
 
     else if (dp[i + 1][j] >= dp[i][j + 1]) {
-      out += `<span class="line remove">${escapeHtml(a[i])}</span>`;
+      out += `<div class="block remove">${escapeHtml(a[i])}</div>`;
       i++;
     }
 
     else {
-      out += `<span class="line add">${escapeHtml(b[j])}</span>`;
+      out += `<div class="block add">${escapeHtml(b[j])}</div>`;
       j++;
     }
   }
 
   while (i < a.length) {
-    out += `<span class="line remove">${escapeHtml(a[i])}</span>`;
+    out += `<div class="block remove">${escapeHtml(a[i])}</div>`;
     i++;
   }
 
   while (j < b.length) {
-    out += `<span class="line add">${escapeHtml(b[j])}</span>`;
+    out += `<div class="block add">${escapeHtml(b[j])}</div>`;
     j++;
   }
 
   return out;
 }
 
-/* =========================
-   LETTER-BY-LETTER DIFF
-========================= */
-function charDiff(oldLine, newLine) {
-
-  let result = "";
-  const max = Math.max(oldLine.length, newLine.length);
-
-  for (let i = 0; i < max; i++) {
-
-    const o = oldLine[i];
-    const n = newLine[i];
-
-    if (o === n) {
-      if (n !== undefined) result += escapeHtml(n);
-    } else {
-      if (o !== undefined) result += `<span class="remove">${escapeHtml(o)}</span>`;
-      if (n !== undefined) result += `<span class="add">${escapeHtml(n)}</span>`;
-    }
-  }
-
-  return result;
-}
-
-/* SINGLE FILE */
-function highlight(text, type) {
-  text = cleanText(text);
-
-  return text
-    .split("\n")
-    .map(l => `<span class="line ${type}">${escapeHtml(l)}</span>`)
+/* RAW VIEW */
+function renderBlocks(text, type) {
+  return splitBlocks(text)
+    .map(b => `<div class="block ${type}">${escapeHtml(b)}</div>`)
     .join("");
 }
 
 /* ESCAPE */
-function escapeHtml(text) {
-  return text
+function escapeHtml(t) {
+  return t
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
