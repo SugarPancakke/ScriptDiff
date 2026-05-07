@@ -48,15 +48,25 @@
       resize: none;
     }
 
-    button {
-      background: #4d4747;
-      color: white;
-      display: block;
-      margin: 20px auto;
-      padding: 12px 30px;
-      font-size: 16px;
-      cursor: pointer;
-    }
+     .buttons {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+  }
+
+  button {
+    background: #4d4747;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    cursor: pointer;
+    font-size: 16px;
+    font-family: monospace;
+  }
+
+  button:hover {
+    background: #5a5454;
+  }
 
     .results {
       display: flex;
@@ -74,7 +84,6 @@
       background: #4d4747;
       padding: 15px 20px;
       padding: 15px;
-      border: 1px solid #ddd;
       min-height: 200px;
       white-space: nowrap;
       overflow-x: auto;
