@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Data Diff Viewer</title>
+<title>Collage Tool</title>
 
 <style>
 body {
@@ -10,313 +10,94 @@ body {
   background: #322d2d;
   color: white;
   font-family: monospace;
-}
 
-/* TOP BAR */
-.topbar {
-  padding: 12px;
   display: flex;
-  gap: 12px;
-  align-items: center;
-  background: #2a2525;
-  position: sticky;
-  top: 0;
+  height: 100vh;
+  overflow: hidden;
 }
 
-.upload-label {
+/* SIDEBAR (matching wrapper style) */
+.sidebar {
+  width: 240px;
+  background: #2a2525;
+  padding: 20px;
+  box-sizing: border-box;
+
   display: flex;
   flex-direction: column;
-  font-size: 12px;
-  color: #ccc;
-}
+  gap: 25px;
 
-.upload-label input {
-  background: #3d3838;
-  color: white;
-  border: none;
-  padding: 6px;
-}
-
-/* BUTTON */
-button {
-  background: #4d4747;
-  color: white;
-  border: none;
-  padding: 12px 30px;
-  font-size: 16px;
-  cursor: pointer;
-}
-
-button:active {
-  transform: translateY(1px);
-  background: #3f3a3a;
-}
-
-/* LAYOUT */
-.container {
-  display: flex;
-  height: calc(100vh - 60px);
-}
-
-.left {
-  width: 30%;
-  background: #2b2626;
-  overflow-y: auto;
   border-right: 1px solid #444;
 }
 
-.file {
-  padding: 8px;
-  border-bottom: 1px solid #3d3838;
+/* GROUPS */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* BUTTONS (matching your Text Cleaner buttons) */
+.tab {
+  background: #4d4747;
+  padding: 12px 14px;
+  border-radius: 8px;
   cursor: pointer;
-}
+  transition: 0.15s ease;
+  user-select: none;
 
-.file:hover {
-  background: #3a3434;
-}
-
-.file.active {
-  background: #4a4040;
-}
-
-.tag {
-  font-size: 11px;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-.modified { background: #ef6c00; }
-.added { background: #2e7d32; }
-.unchanged { background: #555; }
-.removed { background: #b71c1c; }
-
-/* RIGHT VIEWER */
-.right {
-  width: 70%;
-  padding: 10px;
-  overflow-y: auto;
-}
-
-/* BLOCKS */
-.block {
-  margin-bottom: 2px;
-  padding: 6px 8px;
-  border-radius: 6px;
-  background: #2a2525;
-
-  white-space: pre;
+  border: 1px solid #555;
   font-family: monospace;
 }
 
-.add {
-  background: rgba(46,125,50,0.25);
-  border-left: 3px solid #2e7d32;
+.tab:hover {
+  background: #5a5454;
 }
 
-.remove {
-  background: rgba(183,28,28,0.25);
-  border-left: 3px solid #b71c1c;
-  text-decoration: line-through;
-  opacity: 0.85;
+/* CONTENT AREA */
+.content {
+  flex: 1;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  display: flex;
 }
 
-/* ===== DARK SCROLLBARS (CHROME / EDGE / SAFARI) ===== */
-.left::-webkit-scrollbar,
-.right::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-.left::-webkit-scrollbar-track,
-.right::-webkit-scrollbar-track {
-  background: #2a2525;
-}
-
-.left::-webkit-scrollbar-thumb,
-.right::-webkit-scrollbar-thumb {
-  background: #4a4040;
-  border-radius: 8px;
-  border: 2px solid #2a2525;
-}
-
-.left::-webkit-scrollbar-thumb:hover,
-.right::-webkit-scrollbar-thumb:hover {
-  background: #5a4d4d;
-}
-
-/* ===== FIREFOX SUPPORT ===== */
-.left,
-.right {
-  scrollbar-width: thin;
-  scrollbar-color: #4a4040 #2a2525;
+/* IFRAME FULL AREA */
+iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+  background: #322d2d;
 }
 </style>
+
 </head>
 
 <body>
 
-<div class="topbar">
+<div class="sidebar">
 
-  <label class="upload-label">
-    Old Folder:
-    <input type="file" id="oldFiles" webkitdirectory multiple>
-  </label>
+  <div class="group">
+    <div class="tab" onclick="loadTool('clean.html')">Clean</div>
+    <div class="tab" onclick="loadTool('diff.html')">Diff</div>
+  </div>
 
-  <label class="upload-label">
-    New Folder:
-    <input type="file" id="newFiles" webkitdirectory multiple>
-  </label>
-
-  <button onclick="loadFiles()">Compare</button>
+  <div class="group">
+    <div class="tab" onclick="loadTool('extract.html')">ID Extractor</div>
+    <div class="tab" onclick="loadTool('listdiff.html')">List Diff</div>
+  </div>
 
 </div>
 
-<div class="container">
-  <div class="left" id="fileList"></div>
-  <div class="right" id="viewer">Select file</div>
+<div class="content">
+  <iframe id="toolFrame" src="tools/clean.html"></iframe>
 </div>
 
 <script>
-let oldData = {};
-let newData = {};
-let selectedName = null;
-
-function cleanText(t) {
-  return t.replace(/\r/g, "");
-}
-
-function normalize(file) {
-  return (file.webkitRelativePath || file.name).split("/").slice(1).join("/");
-}
-
-function readFiles(files, store, cb) {
-  let done = 0;
-  if (!files.length) return cb();
-
-  for (let f of files) {
-    const r = new FileReader();
-
-    r.onload = e => {
-      store[normalize(f)] = cleanText(e.target.result);
-      done++;
-      if (done === files.length) cb();
-    };
-
-    r.readAsText(f);
-  }
-}
-
-function loadFiles() {
-  oldData = {};
-  newData = {};
-  selectedName = null;
-
-  readFiles(oldFiles.files, oldData, () => {
-    readFiles(newFiles.files, newData, compare);
-  });
-}
-
-function compare() {
-
-  const list = document.getElementById("fileList");
-  list.innerHTML = "";
-
-  const all = new Set([...Object.keys(oldData), ...Object.keys(newData)]);
-
-  all.forEach(name => {
-
-    const o = oldData[name];
-    const n = newData[name];
-
-    let status = "unchanged";
-    if (!o) status = "added";
-    else if (!n) status = "removed";
-    else if (o !== n) status = "modified";
-
-    const div = document.createElement("div");
-    div.className = "file";
-    div.dataset.name = name;
-
-    div.onclick = () => show(name);
-
-    div.innerHTML = `
-      <span>${name}</span>
-      <span class="tag ${status}">${status}</span>
-    `;
-
-    list.appendChild(div);
-  });
-}
-
-function show(name) {
-
-  selectedName = name;
-
-  document.querySelectorAll(".file").forEach(el => {
-    el.classList.toggle("active", el.dataset.name === name);
-  });
-
-  const a = oldData[name] || "";
-  const b = newData[name] || "";
-  const viewer = document.getElementById("viewer");
-
-  const A = a.split("\n");
-  const B = b.split("\n");
-
-  viewer.innerHTML = diffBlocks(A, B);
-}
-
-function diffBlocks(a, b) {
-
-  const dp = Array(a.length + 1)
-    .fill(0)
-    .map(() => Array(b.length + 1).fill(0));
-
-  for (let i = a.length - 1; i >= 0; i--) {
-    for (let j = b.length - 1; j >= 0; j--) {
-      if (a[i] === b[j]) {
-        dp[i][j] = dp[i + 1][j + 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);
-      }
-    }
-  }
-
-  let i = 0, j = 0;
-  let out = "";
-
-  while (i < a.length && j < b.length) {
-
-    if (a[i] === b[j]) {
-      out += wrap(a[i], "");
-      i++; j++;
-    }
-    else if (dp[i + 1][j] >= dp[i][j + 1]) {
-      out += wrap(a[i], "remove");
-      i++;
-    }
-    else {
-      out += wrap(b[j], "add");
-      j++;
-    }
-  }
-
-  while (i < a.length) out += wrap(a[i++], "remove");
-  while (j < b.length) out += wrap(b[j++], "add");
-
-  return out;
-}
-
-function wrap(text, type) {
-  if (text === "") return `<div class="block ${type}">&nbsp;</div>`;
-  return `<div class="block ${type}">${escapeHtml(text)}</div>`;
-}
-
-function escapeHtml(t) {
-  return t
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;");
+function loadTool(page) {
+  document.getElementById("toolFrame").src = "tools/" + page;
 }
 </script>
 
