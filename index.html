@@ -36,10 +36,7 @@ body {
   padding: 6px;
 }
 
-/* =========================
-   BUTTON (FIXED)
-========================= */
-
+/* BUTTON */
 button {
   background: #4d4747;
   color: white;
@@ -47,35 +44,25 @@ button {
   padding: 12px 30px;
   font-size: 16px;
   cursor: pointer;
-
-  /* IMPORTANT: NOT CENTERED */
   display: inline-block;
   margin: 0;
-
-  transition: none;
 }
 
-/* no hover change */
 button:hover {
   background: #4d4747;
 }
 
-/* click-only feedback */
 button:active {
   transform: translateY(1px);
   background: #3f3a3a;
 }
 
-/* =========================
-   LAYOUT
-========================= */
-
+/* LAYOUT */
 .container {
   display: flex;
   height: calc(100vh - 60px);
 }
 
-/* LEFT FILE LIST */
 .left {
   width: 30%;
   background: #2b2626;
@@ -110,12 +97,13 @@ button:active {
   overflow-y: auto;
 }
 
-/* BLOCKS */
+/* IMPORTANT FIX */
 .block {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   padding: 8px;
   border-radius: 6px;
   background: #2a2525;
+
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -162,9 +150,11 @@ button:active {
 let oldData = {};
 let newData = {};
 
-/* CLEAN */
+/* CLEAN (FIXED: keeps real line structure) */
 function cleanText(t) {
-  return t.replace(/[\u0000-\u001F\u007F-\u009F]/g, "").replace(/\r/g, "");
+  return t
+    .replace(/\r/g, "")
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, "");
 }
 
 /* PATH */
@@ -172,7 +162,7 @@ function normalize(file) {
   return (file.webkitRelativePath || file.name).split("/").slice(1).join("/");
 }
 
-/* READ */
+/* READ FILES */
 function readFiles(files, store, cb) {
   let done = 0;
   if (!files.length) return cb();
@@ -231,11 +221,12 @@ function compare() {
   });
 }
 
-/* SPLIT */
+/* FIXED: true line-based split */
 function splitBlocks(text) {
   return cleanText(text)
-    .split(/(?=\/Game\/|InputAction\.|UI\.|BP_|Ability\.|require|ConsoleAutoChangeLine)/g)
-    .filter(Boolean);
+    .split("\n")
+    .map(l => l.trim())
+    .filter(l => l.length > 0);
 }
 
 /* SHOW */
@@ -302,7 +293,10 @@ function wrap(text, type) {
 
 /* ESCAPE */
 function escapeHtml(t) {
-  return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  return t
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;");
 }
 </script>
 
