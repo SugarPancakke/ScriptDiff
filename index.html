@@ -16,7 +16,7 @@ body {
   overflow: hidden;
 }
 
-/* SIDEBAR */
+/* SIDEBAR (matching wrapper style) */
 .sidebar {
   width: 240px;
   background: #2a2525;
@@ -37,22 +37,17 @@ body {
   gap: 10px;
 }
 
-/* BUTTONS */
+/* BUTTONS (matching your Text Cleaner buttons) */
 .tab {
   background: #4d4747;
-  color: white;
-
   padding: 12px 14px;
-
-  border: none;
   border-radius: 8px;
-
   cursor: pointer;
   transition: 0.15s ease;
   user-select: none;
 
+  border: 1px solid #555;
   font-family: monospace;
-  font-size: 16px;
 }
 
 .tab:hover {
@@ -62,54 +57,19 @@ body {
 /* CONTENT AREA */
 .content {
   flex: 1;
+  padding: 0;
+  margin: 0;
   overflow: hidden;
   display: flex;
-
-  background: #322d2d;
 }
 
-/* IFRAME */
+/* IFRAME FULL AREA */
 iframe {
   width: 100%;
   height: 100%;
   border: none;
   display: block;
   background: #322d2d;
-}
-
-/* ===== DARK SCROLLBARS ===== */
-.sidebar::-webkit-scrollbar,
-.content::-webkit-scrollbar,
-iframe::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-.sidebar::-webkit-scrollbar-track,
-.content::-webkit-scrollbar-track,
-iframe::-webkit-scrollbar-track {
-  background: #2a2525;
-}
-
-.sidebar::-webkit-scrollbar-thumb,
-.content::-webkit-scrollbar-thumb,
-iframe::-webkit-scrollbar-thumb {
-  background: #4a4040;
-  border-radius: 8px;
-  border: 2px solid #2a2525;
-}
-
-.sidebar::-webkit-scrollbar-thumb:hover,
-.content::-webkit-scrollbar-thumb:hover,
-iframe::-webkit-scrollbar-thumb:hover {
-  background: #5a4d4d;
-}
-
-/* Firefox */
-.sidebar,
-.content {
-  scrollbar-width: thin;
-  scrollbar-color: #4a4040 #2a2525;
 }
 </style>
 
