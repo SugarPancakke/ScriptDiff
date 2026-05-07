@@ -88,6 +88,7 @@
     font-family: monospace;
     list-style-position: inside;
     margin: 0;
+    border: none;
   }
 </style>
 </head>
@@ -103,7 +104,7 @@
     </div>
 
     <div class="box">
-      <h3>Previously Missing</h3>
+      <h3>Previous List</h3>
       <textarea id="list2" placeholder="One item per line"></textarea>
     </div>
   </div>
@@ -117,8 +118,8 @@
     </div>
 
     <div class="result-box">
-      <h3>Removed</h3>
-      <ul id="removed"></ul>
+      <h3>Overlap</h3>
+      <ul id="overlap"></ul>
     </div>
   </div>
 
@@ -136,18 +137,18 @@ function compareLists() {
     .map(x => x.trim())
     .filter(x => x !== "");
 
-  const currentSet = new Set(list1);
-  const previousMissingSet = new Set(list2);
+  const set1 = new Set(list1); // current
+  const set2 = new Set(list2); // previous
 
-  // FIXED LOGIC FOR YOUR USE CASE
-  const added = list1.filter(id => !previousMissingSet.has(id));
-  const removed = list2.filter(id => !currentSet.has(id));
+  const added = list1.filter(id => !set2.has(id));
+
+  const overlap = list1.filter(id => set2.has(id));
 
   const addedList = document.getElementById("added");
-  const removedList = document.getElementById("removed");
+  const overlapList = document.getElementById("overlap");
 
   addedList.innerHTML = "";
-  removedList.innerHTML = "";
+  overlapList.innerHTML = "";
 
   added.forEach(id => {
     const li = document.createElement("li");
@@ -155,10 +156,10 @@ function compareLists() {
     addedList.appendChild(li);
   });
 
-  removed.forEach(id => {
+  overlap.forEach(id => {
     const li = document.createElement("li");
     li.textContent = id;
-    removedList.appendChild(li);
+    overlapList.appendChild(li);
   });
 }
 </script>
