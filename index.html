@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Binary Text Diff Viewer</title>
+<title>Data Diff Viewer</title>
 
 <style>
 body {
@@ -12,8 +12,9 @@ body {
   font-family: monospace;
 }
 
+/* TOP BAR */
 .topbar {
-  padding: 15px;
+  padding: 12px;
   display: flex;
   gap: 12px;
   align-items: center;
@@ -26,7 +27,6 @@ body {
   display: flex;
   flex-direction: column;
   font-size: 12px;
-  gap: 4px;
   color: #ccc;
 }
 
@@ -37,45 +37,51 @@ body {
   padding: 6px;
 }
 
+/* =========================
+   BUTTON (FIXED)
+========================= */
+
 button {
   background: #4d4747;
   color: white;
   border: none;
-  padding: 10px 16px;
+  padding: 12px 30px;
+  font-size: 16px;
   cursor: pointer;
+
+  /* IMPORTANT: NOT CENTERED */
+  display: inline-block;
+  margin: 0;
+
+  transition: none;
 }
 
+/* no hover change */
 button:hover {
-  background: #5a5454;
+  background: #4d4747;
 }
+
+/* click-only feedback */
+button:active {
+  transform: translateY(1px);
+  background: #3f3a3a;
+}
+
+/* =========================
+   LAYOUT
+========================= */
 
 .container {
   display: flex;
-  height: calc(100vh - 70px);
+  height: calc(100vh - 60px);
 }
 
+/* LEFT FILE LIST */
 .left {
   width: 30%;
-  overflow-y: auto;
   background: #2b2626;
-  border-right: 1px solid #444;
-}
-
-.right {
-  width: 70%;
-  padding: 10px;
   overflow-y: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-/* diff styles */
-.add {
-  background: rgba(46,125,50,0.35);
-}
-
-.remove {
-  background: rgba(183,28,28,0.35);
+  border-right: 1px solid #444;
 }
 
 .file {
@@ -97,6 +103,36 @@ button:hover {
 .modified { background: #ef6c00; }
 .added { background: #2e7d32; }
 .unchanged { background: #555; }
+
+/* RIGHT VIEWER */
+.right {
+  width: 70%;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+/* BLOCKS */
+.block {
+  margin-bottom: 12px;
+  padding: 8px;
+  border-radius: 6px;
+  background: #2a2525;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* DIFF COLORS */
+.add {
+  background: rgba(46,125,50,0.25);
+  border-left: 3px solid #2e7d32;
+}
+
+.remove {
+  background: rgba(183,28,28,0.25);
+  border-left: 3px solid #b71c1c;
+  text-decoration: line-through;
+  opacity: 0.85;
+}
 </style>
 </head>
 
@@ -120,24 +156,24 @@ button:hover {
 
 <div class="container">
   <div class="left" id="fileList"></div>
-  <div class="right" id="viewer">Select a file</div>
+  <div class="right" id="viewer">Select file</div>
 </div>
 
 <script>
 let oldData = {};
 let newData = {};
 
-/* CLEAN (important for Lua dumps) */
+/* CLEAN */
 function cleanText(t) {
   return t.replace(/[\u0000-\u001F\u007F-\u009F]/g, "").replace(/\r/g, "");
 }
 
-/* REMOVE ROOT FOLDER */
+/* PATH */
 function normalize(file) {
   return (file.webkitRelativePath || file.name).split("/").slice(1).join("/");
 }
 
-/* READ FILES */
+/* READ */
 function readFiles(files, store, cb) {
   let done = 0;
   if (!files.length) return cb();
@@ -160,15 +196,12 @@ function loadFiles() {
   oldData = {};
   newData = {};
 
-  const oldFiles = document.getElementById("oldFiles").files;
-  const newFiles = document.getElementById("newFiles").files;
-
-  readFiles(oldFiles, oldData, () => {
-    readFiles(newFiles, newData, compare);
+  readFiles(oldFiles.files, oldData, () => {
+    readFiles(newFiles.files, newData, compare);
   });
 }
 
-/* FILE LIST */
+/* LIST */
 function compare() {
 
   const list = document.getElementById("fileList");
@@ -199,42 +232,33 @@ function compare() {
   });
 }
 
-/* SHOW FILE */
+/* SPLIT */
+function splitBlocks(text) {
+  return cleanText(text)
+    .split(/(?=\/Game\/|InputAction\.|UI\.|BP_|Ability\.|require|ConsoleAutoChangeLine)/g)
+    .filter(Boolean);
+}
+
+/* SHOW */
 function show(name) {
 
   const a = oldData[name] || "";
   const b = newData[name] || "";
   const viewer = document.getElementById("viewer");
 
-  if (!a) {
-    viewer.innerHTML = render(b, "add");
-    return;
-  }
+  const A = splitBlocks(a);
+  const B = splitBlocks(b);
 
-  if (!b) {
-    viewer.innerHTML = render(a, "remove");
-    return;
-  }
-
-  viewer.innerHTML = diff(a, b);
+  viewer.innerHTML = diffBlocks(A, B);
 }
 
-/* =========================
-   TRUE CHARACTER DIFF (CORE)
-========================= */
-function diff(oldStr, newStr) {
-
-  oldStr = cleanText(oldStr);
-  newStr = cleanText(newStr);
-
-  const a = Array.from(oldStr);
-  const b = Array.from(newStr);
+/* DIFF */
+function diffBlocks(a, b) {
 
   const dp = Array(a.length + 1)
-    .fill(null)
+    .fill(0)
     .map(() => Array(b.length + 1).fill(0));
 
-  // LCS
   for (let i = a.length - 1; i >= 0; i--) {
     for (let j = b.length - 1; j >= 0; j--) {
       if (a[i] === b[j]) {
@@ -251,47 +275,35 @@ function diff(oldStr, newStr) {
   while (i < a.length && j < b.length) {
 
     if (a[i] === b[j]) {
-      out += escape(a[i]);
+      out += wrap(a[i], "");
       i++; j++;
     }
 
     else if (dp[i + 1][j] >= dp[i][j + 1]) {
-      out += `<span class="remove">${escape(a[i])}</span>`;
+      out += wrap(a[i], "remove");
       i++;
     }
 
     else {
-      out += `<span class="add">${escape(b[j])}</span>`;
+      out += wrap(b[j], "add");
       j++;
     }
   }
 
-  while (i < a.length) {
-    out += `<span class="remove">${escape(a[i])}</span>`;
-    i++;
-  }
+  while (i < a.length) out += wrap(a[i++], "remove");
+  while (j < b.length) out += wrap(b[j++], "add");
 
-  while (j < b.length) {
-    out += `<span class="add">${escape(b[j])}</span>`;
-    j++;
-  }
-
-  return `<div>${out}</div>`;
+  return out;
 }
 
-/* RAW RENDER */
-function render(text, type) {
-  return Array.from(cleanText(text))
-    .map(c => `<span class="${type}">${escape(c)}</span>`)
-    .join("");
+/* WRAP */
+function wrap(text, type) {
+  return `<div class="block ${type}">${escapeHtml(text)}</div>`;
 }
 
 /* ESCAPE */
-function escape(t) {
-  return t
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+function escapeHtml(t) {
+  return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 </script>
 
