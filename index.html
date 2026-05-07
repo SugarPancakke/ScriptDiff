@@ -9,6 +9,7 @@ body {
   margin: 0;
   background: #322d2d;
   color: white;
+  font-family: monospace;
 }
 
 /* TOP BAR */
@@ -44,12 +45,6 @@ button {
   padding: 12px 30px;
   font-size: 16px;
   cursor: pointer;
-  display: inline-block;
-  margin: 0;
-}
-
-button:hover {
-  background: #4d4747;
 }
 
 button:active {
@@ -80,6 +75,11 @@ button:active {
   background: #3a3434;
 }
 
+/* ACTIVE FILE */
+.file.active {
+  background: #4a4040;
+}
+
 .tag {
   font-size: 11px;
   padding: 2px 6px;
@@ -89,6 +89,7 @@ button:active {
 .modified { background: #ef6c00; }
 .added { background: #2e7d32; }
 .unchanged { background: #555; }
+.removed { background: #b71c1c; }
 
 /* RIGHT VIEWER */
 .right {
@@ -99,13 +100,13 @@ button:active {
 
 /* IMPORTANT FIX */
 .block {
-  margin-bottom: 8px;
-  padding: 8px;
+  margin-bottom: 2px;
+  padding: 6px 8px;
   border-radius: 6px;
   background: #2a2525;
 
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: pre;   /* KEY FIX */
+  font-family: monospace;
 }
 
 /* DIFF COLORS */
@@ -149,12 +150,11 @@ button:active {
 <script>
 let oldData = {};
 let newData = {};
+let selectedName = null;
 
-/* CLEAN (FIXED: keeps real line structure) */
+/* CLEAN */
 function cleanText(t) {
-  return t
-    .replace(/\r/g, "")
-    .replace(/[\u0000-\u001F\u007F-\u009F]/g, "");
+  return t.replace(/\r/g, "");
 }
 
 /* PATH */
@@ -184,6 +184,7 @@ function readFiles(files, store, cb) {
 function loadFiles() {
   oldData = {};
   newData = {};
+  selectedName = null;
 
   readFiles(oldFiles.files, oldData, () => {
     readFiles(newFiles.files, newData, compare);
@@ -210,6 +211,8 @@ function compare() {
 
     const div = document.createElement("div");
     div.className = "file";
+    div.dataset.name = name;
+
     div.onclick = () => show(name);
 
     div.innerHTML = `
@@ -221,25 +224,28 @@ function compare() {
   });
 }
 
-/* FIXED: true line-based split */
-function splitBlocks(text) {
-  return cleanText(text)
-    .split("\n")
-    .map(l => l.trim())
-    .filter(l => l.length > 0);
-}
-
 /* SHOW */
 function show(name) {
+
+  selectedName = name;
+
+  document.querySelectorAll(".file").forEach(el => {
+    el.classList.toggle("active", el.dataset.name === name);
+  });
 
   const a = oldData[name] || "";
   const b = newData[name] || "";
   const viewer = document.getElementById("viewer");
 
-  const A = splitBlocks(a);
-  const B = splitBlocks(b);
+  const A = splitLines(a);
+  const B = splitLines(b);
 
   viewer.innerHTML = diffBlocks(A, B);
+}
+
+/* FIXED: preserve structure */
+function splitLines(text) {
+  return cleanText(text).split("\n");
 }
 
 /* DIFF */
@@ -268,12 +274,10 @@ function diffBlocks(a, b) {
       out += wrap(a[i], "");
       i++; j++;
     }
-
     else if (dp[i + 1][j] >= dp[i][j + 1]) {
       out += wrap(a[i], "remove");
       i++;
     }
-
     else {
       out += wrap(b[j], "add");
       j++;
@@ -286,8 +290,11 @@ function diffBlocks(a, b) {
   return out;
 }
 
-/* WRAP */
+/* WRAP (FIXED empty lines) */
 function wrap(text, type) {
+  if (text === "") {
+    return `<div class="block ${type}">&nbsp;</div>`;
+  }
   return `<div class="block ${type}">${escapeHtml(text)}</div>`;
 }
 
