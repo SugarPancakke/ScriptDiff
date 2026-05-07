@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Game Data Diff Viewer</title>
+<title>Text Cleaner</title>
 
 <style>
 body {
@@ -12,80 +12,60 @@ body {
   font-family: monospace;
 }
 
-/* TOP BAR */
 .topbar {
-  padding: 12px;
+  padding: 15px;
   display: flex;
   gap: 12px;
   align-items: center;
   background: #2a2525;
   position: sticky;
   top: 0;
+  border-bottom: 1px solid #444;
 }
 
 .upload-label {
   display: flex;
   flex-direction: column;
   font-size: 12px;
+  gap: 4px;
   color: #ccc;
 }
-
-.upload-label input {
-  background: #3d3838;
-  color: white;
-  border: none;
-  padding: 6px;
-}
-
-/* =========================
-   BUTTON (FIXED)
-========================= */
 
 button {
   background: #4d4747;
   color: white;
   border: none;
-  padding: 12px 30px;
-  font-size: 16px;
+  padding: 10px 16px;
   cursor: pointer;
-
-  /* IMPORTANT: NOT CENTERED */
-  display: inline-block;
-  margin: 0;
-
-  transition: none;
+  transition: 0.15s;
 }
 
-/* no hover change */
 button:hover {
-  background: #4d4747;
+  background: #5a5454;
 }
-
-/* click-only feedback */
-button:active {
-  transform: translateY(1px);
-  background: #3f3a3a;
-}
-
-/* =========================
-   LAYOUT
-========================= */
 
 .container {
   display: flex;
-  height: calc(100vh - 60px);
+  height: calc(100vh - 70px);
 }
 
-/* LEFT FILE LIST */
 .left {
   width: 30%;
-  background: #2b2626;
   overflow-y: auto;
+  background: #2b2626;
   border-right: 1px solid #444;
 }
 
+.right {
+  width: 70%;
+  padding: 12px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .file {
-  padding: 8px;
+  padding: 10px;
   border-bottom: 1px solid #3d3838;
   cursor: pointer;
 }
@@ -94,44 +74,27 @@ button:active {
   background: #3a3434;
 }
 
-.tag {
-  font-size: 11px;
-  padding: 2px 6px;
-  border-radius: 4px;
+.info {
+  color: #aaa;
+  font-size: 12px;
 }
 
-.modified { background: #ef6c00; }
-.added { background: #2e7d32; }
-.unchanged { background: #555; }
-
-/* RIGHT VIEWER */
-.right {
-  width: 70%;
-  padding: 10px;
-  overflow-y: auto;
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
 }
 
-/* BLOCKS */
-.block {
-  margin-bottom: 12px;
-  padding: 8px;
-  border-radius: 6px;
+::-webkit-scrollbar-track {
   background: #2a2525;
-  white-space: pre-wrap;
-  word-break: break-word;
 }
 
-/* DIFF COLORS */
-.add {
-  background: rgba(46,125,50,0.25);
-  border-left: 3px solid #2e7d32;
+::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 8px;
 }
 
-.remove {
-  background: rgba(183,28,28,0.25);
-  border-left: 3px solid #b71c1c;
-  text-decoration: line-through;
-  opacity: 0.85;
+::-webkit-scrollbar-thumb:hover {
+  background: #666;
 }
 </style>
 </head>
@@ -141,169 +104,143 @@ button:active {
 <div class="topbar">
 
   <label class="upload-label">
-    Old Folder:
-    <input type="file" id="oldFiles" webkitdirectory multiple>
+    Upload Files / Folder
+    <input type="file" id="files" webkitdirectory multiple>
   </label>
 
-  <label class="upload-label">
-    New Folder:
-    <input type="file" id="newFiles" webkitdirectory multiple>
-  </label>
+  <button onclick="processFiles()">Clean Files</button>
 
-  <button onclick="loadFiles()">Compare</button>
+  <button onclick="downloadZip()">Download ZIP</button>
 
 </div>
 
 <div class="container">
   <div class="left" id="fileList"></div>
-  <div class="right" id="viewer">Select file</div>
+  <div class="right" id="viewer">No file selected.</div>
 </div>
 
+<!-- JSZip -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
 <script>
-let oldData = {};
-let newData = {};
+let cleanedFiles = {};
 
-/* CLEAN */
-function cleanText(t) {
-  return t.replace(/[\u0000-\u001F\u007F-\u009F]/g, "").replace(/\r/g, "");
-}
+/* =========================
+   PYTHON-LIKE CLEANER
+========================= */
+function cleanText(text) {
 
-/* PATH */
-function normalize(file) {
-  return (file.webkitRelativePath || file.name).split("/").slice(1).join("/");
-}
+  // remove weird unicode garbage
+  text = text.replace(/[^\x00-\x7F]+/g, " ");
 
-/* READ */
-function readFiles(files, store, cb) {
-  let done = 0;
-  if (!files.length) return cb();
+  // keep readable chars
+  text = text.replace(/[^\w\s\-.:/\\]/g, " ");
 
-  for (let f of files) {
-    const r = new FileReader();
+  // normalize whitespace
+  text = text.replace(/\s+/g, "\n");
 
-    r.onload = e => {
-      store[normalize(f)] = cleanText(e.target.result);
-      done++;
-      if (done === files.length) cb();
-    };
+  let lines = [];
 
-    r.readAsText(f);
+  for (let line of text.split("\n")) {
+
+    line = line.trim();
+
+    if (line.length < 3)
+      continue;
+
+    lines.push(line);
   }
+
+  return lines.join("\n");
 }
 
-/* LOAD */
-function loadFiles() {
-  oldData = {};
-  newData = {};
-
-  readFiles(oldFiles.files, oldData, () => {
-    readFiles(newFiles.files, newData, compare);
-  });
+/* =========================
+   ESCAPE HTML
+========================= */
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
-/* LIST */
-function compare() {
+/* =========================
+   NORMALIZE PATH
+========================= */
+function normalize(file) {
+  return (file.webkitRelativePath || file.name);
+}
 
-  const list = document.getElementById("fileList");
-  list.innerHTML = "";
+/* =========================
+   PROCESS FILES
+========================= */
+async function processFiles() {
 
-  const all = new Set([...Object.keys(oldData), ...Object.keys(newData)]);
+  cleanedFiles = {};
 
-  all.forEach(name => {
+  const files = document.getElementById("files").files;
+  const fileList = document.getElementById("fileList");
+  const viewer = document.getElementById("viewer");
 
-    const o = oldData[name];
-    const n = newData[name];
+  fileList.innerHTML = "";
+  viewer.textContent = "Processing...";
 
-    let status = "unchanged";
-    if (!o) status = "added";
-    else if (!n) status = "removed";
-    else if (o !== n) status = "modified";
+  for (let file of files) {
+
+    const text = await file.text();
+
+    const cleaned = cleanText(text);
+
+    const path = normalize(file);
+
+    cleanedFiles[path] = cleaned;
 
     const div = document.createElement("div");
     div.className = "file";
-    div.onclick = () => show(name);
 
     div.innerHTML = `
-      <span>${name}</span>
-      <span class="tag ${status}">${status}</span>
+      <div>${path}</div>
+      <div class="info">${cleaned.length} chars</div>
     `;
 
-    list.appendChild(div);
+    div.onclick = () => {
+      viewer.textContent = cleaned;
+    };
+
+    fileList.appendChild(div);
+  }
+
+  viewer.textContent = "Finished cleaning files.";
+}
+
+/* =========================
+   DOWNLOAD ZIP
+========================= */
+async function downloadZip() {
+
+  const zip = new JSZip();
+
+  for (const path in cleanedFiles) {
+
+    let txtName = path;
+
+    // force .txt extension
+    if (!txtName.endsWith(".txt")) {
+      txtName += ".txt";
+    }
+
+    zip.file(txtName, cleanedFiles[path]);
+  }
+
+  const blob = await zip.generateAsync({
+    type: "blob"
   });
-}
 
-/* SPLIT */
-function splitBlocks(text) {
-  return cleanText(text)
-    .split(/(?=\/Game\/|InputAction\.|UI\.|BP_|Ability\.|require|ConsoleAutoChangeLine)/g)
-    .filter(Boolean);
-}
+  const a = document.createElement("a");
 
-/* SHOW */
-function show(name) {
-
-  const a = oldData[name] || "";
-  const b = newData[name] || "";
-  const viewer = document.getElementById("viewer");
-
-  const A = splitBlocks(a);
-  const B = splitBlocks(b);
-
-  viewer.innerHTML = diffBlocks(A, B);
-}
-
-/* DIFF */
-function diffBlocks(a, b) {
-
-  const dp = Array(a.length + 1)
-    .fill(0)
-    .map(() => Array(b.length + 1).fill(0));
-
-  for (let i = a.length - 1; i >= 0; i--) {
-    for (let j = b.length - 1; j >= 0; j--) {
-      if (a[i] === b[j]) {
-        dp[i][j] = dp[i + 1][j + 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);
-      }
-    }
-  }
-
-  let i = 0, j = 0;
-  let out = "";
-
-  while (i < a.length && j < b.length) {
-
-    if (a[i] === b[j]) {
-      out += wrap(a[i], "");
-      i++; j++;
-    }
-
-    else if (dp[i + 1][j] >= dp[i][j + 1]) {
-      out += wrap(a[i], "remove");
-      i++;
-    }
-
-    else {
-      out += wrap(b[j], "add");
-      j++;
-    }
-  }
-
-  while (i < a.length) out += wrap(a[i++], "remove");
-  while (j < b.length) out += wrap(b[j++], "add");
-
-  return out;
-}
-
-/* WRAP */
-function wrap(text, type) {
-  return `<div class="block ${type}">${escapeHtml(text)}</div>`;
-}
-
-/* ESCAPE */
-function escapeHtml(t) {
-  return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  a.href = URL.createObjectURL(blob);
+  a.download = "cleaned_files.zip";
+  a.click();
 }
 </script>
 
