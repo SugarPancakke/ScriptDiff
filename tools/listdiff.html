@@ -92,35 +92,36 @@
   }
 
   /* ===== DARK SCROLLBARS ===== */
-.left::-webkit-scrollbar,
-.right::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
 
-.left::-webkit-scrollbar-track,
-.right::-webkit-scrollbar-track {
-  background: #2a2525;
-}
+  textarea::-webkit-scrollbar,
+  ul::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
 
-.left::-webkit-scrollbar-thumb,
-.right::-webkit-scrollbar-thumb {
-  background: #4a4040;
-  border-radius: 8px;
-  border: 2px solid #2a2525;
-}
+  textarea::-webkit-scrollbar-track,
+  ul::-webkit-scrollbar-track {
+    background: #2a2525;
+  }
 
-.left::-webkit-scrollbar-thumb:hover,
-.right::-webkit-scrollbar-thumb:hover {
-  background: #5a4d4d;
-}
+  textarea::-webkit-scrollbar-thumb,
+  ul::-webkit-scrollbar-thumb {
+    background: #4a4040;
+    border-radius: 8px;
+    border: 2px solid #2a2525;
+  }
 
-/* ===== FIREFOX SUPPORT ===== */
-.left,
-.right {
-  scrollbar-width: thin;
-  scrollbar-color: #4a4040 #2a2525;
-}
+  textarea::-webkit-scrollbar-thumb:hover,
+  ul::-webkit-scrollbar-thumb:hover {
+    background: #5a4d4d;
+  }
+
+  /* ===== FIREFOX SUPPORT ===== */
+  textarea,
+  ul {
+    scrollbar-width: thin;
+    scrollbar-color: #4a4040 #2a2525;
+  }
 </style>
 </head>
 
