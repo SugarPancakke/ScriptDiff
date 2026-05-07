@@ -10,11 +10,12 @@ body {
   background: #322d2d;
   color: white;
   font-family: monospace;
+  font-size: 16px;
 }
 
 /* TOP BAR */
 .topbar {
-  padding: 12px;
+  padding: 10px;
   display: flex;
   gap: 12px;
   align-items: center;
@@ -23,18 +24,24 @@ body {
   top: 0;
 }
 
+/* UPLOAD */
 .upload-label {
   display: flex;
   flex-direction: column;
-  font-size: 12px;
+  font-size: 13px;
   color: #ccc;
+  gap: 4px;
 }
 
+/* clean file input (no overflow box anymore) */
 .upload-label input {
   background: #3d3838;
   color: white;
   border: none;
-  padding: 6px;
+  padding: 4px 6px;
+  font-size: 13px;
+  width: 180px;
+  box-sizing: border-box;
 }
 
 /* BUTTON */
@@ -42,8 +49,8 @@ button {
   background: #4d4747;
   color: white;
   border: none;
-  padding: 6px 14px;  
-  font-size: 14px;     
+  padding: 6px 14px;   /* scaled properly */
+  font-size: 16px;
   cursor: pointer;
   font-family: monospace;
 }
@@ -59,7 +66,7 @@ button:active {
   height: calc(100vh - 60px);
 }
 
-/* LEFT PANEL (smaller now) */
+/* LEFT PANEL */
 .left {
   width: 20%;
   background: #2b2626;
@@ -104,7 +111,7 @@ button:active {
   overflow-x: hidden;
 }
 
-/* BLOCKS (FIXED WRAPPING HERE) */
+/* BLOCKS */
 .block {
   margin-bottom: 2px;
   padding: 6px 8px;
@@ -112,10 +119,11 @@ button:active {
   background: #2a2525;
 
   font-family: monospace;
+  font-size: 16px;
 
-  white-space: pre-wrap;      /* FIX */
-  word-break: break-word;     /* FIX */
-  overflow-wrap: anywhere;    /* FIX */
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .add {
@@ -130,7 +138,7 @@ button:active {
   opacity: 0.85;
 }
 
-/* ===== DARK SCROLLBARS ===== */
+/* SCROLLBARS */
 .left::-webkit-scrollbar,
 .right::-webkit-scrollbar {
   width: 10px;
