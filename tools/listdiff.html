@@ -1,3 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>List Diff Tool</title>
+
+<style>
+  body {
+    margin: 0;
+    background: #322d2d;
+    color: white;
+    display: flex;
+    justify-content: center;
+    font-family: monospace;
+  }
+
+  .wrapper {
+    width: 95%;
+    max-width: 800px;
+    margin-top: 40px;
+  }
+
+  h2 {
+    text-align: center;
+  }
+
+  .container {
+    display: flex;
+    gap: 20px;
+  }
+
+  .box {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  textarea {
+    width: 100%;
+    height: 320px;
+    background: #3d3838;
+    color: white;
+    font-family: monospace;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow-x: auto;
+    padding: 10px;
+    box-sizing: border-box;
+    resize: none;
+    border: none;
+    outline: none;
+  }
+
+  button {
+    background: #4d4747;
+    color: white;
+    border: none;
+    margin: 20px auto;
+    padding: 12px 30px;
+    cursor: pointer;
+    font-size: 16px;
+    font-family: monospace;
+    display: block;
+  }
+
+  button:hover {
+    background: #5a5454;
+  }
+
+  .results {
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    margin-top: 20px;
+  }
+
+  .result-box {
+    flex: 1;
+    max-width: 300px;
+  }
+
+  ul {
+    background: #4d4747;
+    padding: 15px;
+    min-height: 200px;
+    white-space: nowrap;
+    overflow-x: auto;
+    font-family: monospace;
+    list-style-position: inside;
+    margin: 0;
+  }
+</style>
+</head>
+
+<body>
+
+<div class="wrapper">
+
+  <div class="container">
+    <div class="box">
+      <h3>Current Data</h3>
+      <textarea id="list1" placeholder="One item per line"></textarea>
+    </div>
+
+    <div class="box">
+      <h3>Previously Missing</h3>
+      <textarea id="list2" placeholder="One item per line"></textarea>
+    </div>
+  </div>
+
+  <button onclick="compareLists()">Compare</button>
+
+  <div class="results">
+    <div class="result-box">
+      <h3>Added</h3>
+      <ul id="added"></ul>
+    </div>
+
+    <div class="result-box">
+      <h3>Removed</h3>
+      <ul id="removed"></ul>
+    </div>
+  </div>
+
+</div>
+
 <script>
 function compareLists() {
   const list1 = document.getElementById("list1").value
@@ -10,12 +136,12 @@ function compareLists() {
     .map(x => x.trim())
     .filter(x => x !== "");
 
-  const set1 = new Set(list1); // current data
-  const set2 = new Set(list2); // previously missing
+  const currentSet = new Set(list1);
+  const previousMissingSet = new Set(list2);
 
-  // FIXED LOGIC
-  const added = list1.filter(item => !set2.has(item));
-  const removed = list2.filter(item => !set1.has(item));
+  // FIXED LOGIC FOR YOUR USE CASE
+  const added = list1.filter(id => !previousMissingSet.has(id));
+  const removed = list2.filter(id => !currentSet.has(id));
 
   const addedList = document.getElementById("added");
   const removedList = document.getElementById("removed");
@@ -23,16 +149,19 @@ function compareLists() {
   addedList.innerHTML = "";
   removedList.innerHTML = "";
 
-  added.forEach(item => {
+  added.forEach(id => {
     const li = document.createElement("li");
-    li.textContent = item;
+    li.textContent = id;
     addedList.appendChild(li);
   });
 
-  removed.forEach(item => {
+  removed.forEach(id => {
     const li = document.createElement("li");
-    li.textContent = item;
+    li.textContent = id;
     removedList.appendChild(li);
   });
 }
 </script>
+
+</body>
+</html>
