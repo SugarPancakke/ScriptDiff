@@ -79,7 +79,7 @@ button:hover {
 
 .progress-container {
   width: 100%;
-  height: 10px; /* thinner bar */
+  height: 10px;
   background: #3a3434;
   border: 1px solid #555;
   overflow: hidden;
@@ -133,18 +133,29 @@ Waiting for files...
 <script>
 let cleanedFiles = {};
 
-/* STATUS FIX (was missing / causing “stuck” feeling) */
+/* STATUS */
 function setStatus(text) {
   document.getElementById("status").textContent = text;
 }
 
 /* =========================
-   CLEANER (your Python version)
+   IMPROVED PYTHON-LIKE CLEANER (FIXED + COMPLETE)
 ========================= */
 function cleanText(text) {
 
-  text = text.replace(/[^\x00-\x7F]+/g, " ");
+  /* 1. Specific corrupted UTF-8 clusters (Python match) */
+  text = text.replace(
+    /[ÃÂÆËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿœŸŽžŠšŒˆ]+/g,
+    " "
+  );
+
+  /* 2. Remove long non-ASCII sequences (2+ chars) */
+  text = text.replace(/[^\x00-\x7F]{2,}/g, " ");
+
+  /* 3. Keep readable script chars */
   text = text.replace(/[^\w\s\-.:/\\]/g, " ");
+
+  /* 4. Normalize whitespace */
   text = text.replace(/\s+/g, "\n");
 
   let lines = [];
@@ -154,6 +165,25 @@ function cleanText(text) {
     line = line.trim();
 
     if (line.length < 3)
+      continue;
+
+    /* 5. Letter quality filter (IMPORTANT Python logic restored) */
+    let letters = 0;
+    let asciiLetters = 0;
+
+    for (let c of line) {
+      if (/[a-zA-Z]/.test(c)) {
+        letters++;
+        asciiLetters++;
+      } else if (c.charCodeAt(0) < 128 && /[a-zA-Z]/.test(c)) {
+        asciiLetters++;
+        letters++;
+      } else if (c.charCodeAt(0) >= 128) {
+        letters++;
+      }
+    }
+
+    if (letters > 0 && (asciiLetters / letters) < 0.6)
       continue;
 
     lines.push(line);
