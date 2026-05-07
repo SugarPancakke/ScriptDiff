@@ -75,7 +75,6 @@ button:active {
   background: #3a3434;
 }
 
-/* ACTIVE FILE */
 .file.active {
   background: #4a4040;
 }
@@ -98,18 +97,17 @@ button:active {
   overflow-y: auto;
 }
 
-/* IMPORTANT FIX */
+/* BLOCKS */
 .block {
   margin-bottom: 2px;
   padding: 6px 8px;
   border-radius: 6px;
   background: #2a2525;
 
-  white-space: pre;   /* KEY FIX */
+  white-space: pre;
   font-family: monospace;
 }
 
-/* DIFF COLORS */
 .add {
   background: rgba(46,125,50,0.25);
   border-left: 3px solid #2e7d32;
@@ -120,6 +118,37 @@ button:active {
   border-left: 3px solid #b71c1c;
   text-decoration: line-through;
   opacity: 0.85;
+}
+
+/* ===== DARK SCROLLBARS (CHROME / EDGE / SAFARI) ===== */
+.left::-webkit-scrollbar,
+.right::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.left::-webkit-scrollbar-track,
+.right::-webkit-scrollbar-track {
+  background: #2a2525;
+}
+
+.left::-webkit-scrollbar-thumb,
+.right::-webkit-scrollbar-thumb {
+  background: #4a4040;
+  border-radius: 8px;
+  border: 2px solid #2a2525;
+}
+
+.left::-webkit-scrollbar-thumb:hover,
+.right::-webkit-scrollbar-thumb:hover {
+  background: #5a4d4d;
+}
+
+/* ===== FIREFOX SUPPORT ===== */
+.left,
+.right {
+  scrollbar-width: thin;
+  scrollbar-color: #4a4040 #2a2525;
 }
 </style>
 </head>
@@ -152,17 +181,14 @@ let oldData = {};
 let newData = {};
 let selectedName = null;
 
-/* CLEAN */
 function cleanText(t) {
   return t.replace(/\r/g, "");
 }
 
-/* PATH */
 function normalize(file) {
   return (file.webkitRelativePath || file.name).split("/").slice(1).join("/");
 }
 
-/* READ FILES */
 function readFiles(files, store, cb) {
   let done = 0;
   if (!files.length) return cb();
@@ -180,7 +206,6 @@ function readFiles(files, store, cb) {
   }
 }
 
-/* LOAD */
 function loadFiles() {
   oldData = {};
   newData = {};
@@ -191,7 +216,6 @@ function loadFiles() {
   });
 }
 
-/* LIST */
 function compare() {
 
   const list = document.getElementById("fileList");
@@ -224,7 +248,6 @@ function compare() {
   });
 }
 
-/* SHOW */
 function show(name) {
 
   selectedName = name;
@@ -237,18 +260,12 @@ function show(name) {
   const b = newData[name] || "";
   const viewer = document.getElementById("viewer");
 
-  const A = splitLines(a);
-  const B = splitLines(b);
+  const A = a.split("\n");
+  const B = b.split("\n");
 
   viewer.innerHTML = diffBlocks(A, B);
 }
 
-/* FIXED: preserve structure */
-function splitLines(text) {
-  return cleanText(text).split("\n");
-}
-
-/* DIFF */
 function diffBlocks(a, b) {
 
   const dp = Array(a.length + 1)
@@ -290,15 +307,11 @@ function diffBlocks(a, b) {
   return out;
 }
 
-/* WRAP (FIXED empty lines) */
 function wrap(text, type) {
-  if (text === "") {
-    return `<div class="block ${type}">&nbsp;</div>`;
-  }
+  if (text === "") return `<div class="block ${type}">&nbsp;</div>`;
   return `<div class="block ${type}">${escapeHtml(text)}</div>`;
 }
 
-/* ESCAPE */
 function escapeHtml(t) {
   return t
     .replace(/&/g,"&amp;")
