@@ -1,0 +1,115 @@
+<!DOCTYPE html> 
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ID Extractor</title>
+
+<style>
+  body {
+    margin: 0;
+    background: #322d2d;
+    color: white;
+    display: flex;
+    justify-content: center;
+  }
+
+  .wrapper {
+    width: 95%;
+    max-width: 900px;
+    margin-top: 40px;
+  }
+
+  textarea {
+    width: 100%;
+    height: 350px;
+    background: #3d3838;
+    color: white;
+    border: none;
+    padding: 10px;
+    box-sizing: border-box;
+    font-family: monospace;
+    font-size: 14px;
+    resize: none;
+  }
+
+  .buttons {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+  }
+
+  button {
+    background: #4d4747;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+
+  button:hover {
+    background: #5a5454;
+  }
+
+  .output {
+    background: #3d3838;
+    padding: 10px;
+    min-height: 200px;
+    white-space: pre-wrap;
+    font-family: monospace;
+    overflow-x: auto;
+  }
+</style>
+</head>
+
+<body>
+
+<div class="wrapper">
+
+  <h2>ID Extractor</h2>
+
+  <textarea id="input" placeholder="Paste filenames here..."></textarea>
+
+  <div class="buttons">
+    <button onclick="extractIDs()">Extract IDs</button>
+    <button onclick="copyOutput()">Copy</button>
+  </div>
+
+  <div class="output" id="output"></div>
+
+</div>
+
+<script>
+function extractIDs() {
+
+  const text = document.getElementById("input").value;
+
+  // Match S followed by 4 digits
+  const matches = text.match(/S\d{4}/g) || [];
+
+  // Remove duplicates
+  const unique = [...new Set(matches)];
+
+  // Show results
+  document.getElementById("output").textContent =
+    unique.join("\n");
+}
+
+function copyOutput() {
+  const outputText = document.getElementById("output").textContent;
+
+  if (!outputText.trim()) return;
+
+  navigator.clipboard.writeText(outputText)
+    .then(() => {
+      alert("Copied to clipboard!");
+    })
+    .catch(err => {
+      alert("Failed to copy.");
+      console.error(err);
+    });
+}
+</script>
+
+</body>
+</html>
