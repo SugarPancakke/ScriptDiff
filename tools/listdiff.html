@@ -1,125 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>List Diff Tool</title>
-  <style>
-    body {
-      margin: 0;
-      background: #322d2d;
-      color: white;
-      display: flex;
-      justify-content: center;
-      font-family: monospace;
-    }
-
-    .wrapper {
-      width: 95%;
-      max-width: 800px;
-      margin-top: 40px;
-    }
-
-    h2 {
-      text-align: center;
-    }
-
-    .container {
-      display: flex;
-      gap: 20px;
-    }
-
-    .box {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    textarea {
-      width: 100%;
-      height: 320px;
-      background: #3d3838;
-      color: white;
-      font-family: monospace;
-      font-size: 14px;
-      white-space: nowrap;  
-      overflow-x: auto;      
-      padding: 10px;
-      box-sizing: border-box;
-      resize: none;
-    }
-
-  button {
-    background: #4d4747;
-    color: white;
-    border: none;
-    margin: 20px auto;
-    padding: 12px 30px;
-    cursor: pointer;
-    font-size: 16px;
-    font-family: monospace;
-    border: none;
-  }
-
-  button:hover {
-    background: #5a5454;
-  }
-
-    .results {
-      display: flex;
-      justify-content: center;
-      gap: 60px;
-      margin-top: 20px;
-    }
-
-    .result-box {
-      flex: 1;
-      max-width: 300px;
-    }
-
-    ul {
-      background: #4d4747;
-      padding: 15px 20px;
-      padding: 15px;
-      min-height: 200px;
-      white-space: nowrap;
-      overflow-x: auto;
-      font-family: monospace;
-      list-style-position: inside;
-      border: none;
-    }
-  </style>
-</head>
-<body>
-
-<div class="wrapper">
-
-  <div class="container">
-    <div class="box">
-      <h3>Original List</h3>
-      <textarea id="list1" placeholder="One item per line"></textarea>
-    </div>
-
-    <div class="box">
-      <h3>New List</h3>
-      <textarea id="list2" placeholder="One item per line"></textarea>
-    </div>
-  </div>
-
-  <button onclick="compareLists()">Compare</button>
-
-  <div class="results">
-    <div class="result-box">
-      <h3>Added</h3>
-      <ul id="added"></ul>
-    </div>
-
-    <div class="result-box">
-      <h3>Removed</h3>
-      <ul id="removed"></ul>
-    </div>
-  </div>
-</div>
-
 <script>
 function compareLists() {
   const list1 = document.getElementById("list1").value
@@ -132,11 +10,12 @@ function compareLists() {
     .map(x => x.trim())
     .filter(x => x !== "");
 
-  const set1 = new Set(list1);
-  const set2 = new Set(list2);
+  const set1 = new Set(list1); // current data
+  const set2 = new Set(list2); // previously missing
 
-  const added = list2.filter(item => !set1.has(item));
-  const removed = list1.filter(item => !set2.has(item));
+  // FIXED LOGIC
+  const added = list1.filter(item => !set2.has(item));
+  const removed = list2.filter(item => !set1.has(item));
 
   const addedList = document.getElementById("added");
   const removedList = document.getElementById("removed");
@@ -157,6 +36,3 @@ function compareLists() {
   });
 }
 </script>
-
-</body>
-</html>
