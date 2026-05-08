@@ -23,6 +23,11 @@ body {
   top: 0;
 }
 
+/* PUSH SEARCH TO FAR RIGHT */
+.spacer {
+  flex: 1;
+}
+
 .upload-label {
   display: flex;
   flex-direction: column;
@@ -35,6 +40,22 @@ body {
   color: white;
   border: none;
   padding: 6px;
+}
+
+/* SEARCH */
+.search-box {
+  background: #3d3838;
+  color: white;
+  border: none;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: monospace;
+  width: 240px;
+  outline: none;
+}
+
+.search-box::placeholder {
+  color: #aaa;
 }
 
 /* BUTTON */
@@ -151,6 +172,14 @@ button:active {
   opacity: 0.85;
 }
 
+/* SEARCH HIGHLIGHT */
+.highlight {
+  background: #ffd54f;
+  color: black;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
 /* DARK SCROLLBARS */
 .left::-webkit-scrollbar,
 .right::-webkit-scrollbar {
@@ -198,6 +227,16 @@ button:active {
   </label>
 
   <button onclick="loadFiles()">Compare</button>
+
+  <div class="spacer"></div>
+
+  <input
+    type="text"
+    id="searchBox"
+    class="search-box"
+    placeholder="Search..."
+    oninput="runSearch()"
+  >
 
 </div>
 
@@ -276,6 +315,53 @@ function compare() {
 
     list.appendChild(div);
   });
+
+  runSearch();
+}
+
+function runSearch() {
+
+  const search = document
+    .getElementById("searchBox")
+    .value
+    .trim()
+    .toLowerCase();
+
+  const files = document.querySelectorAll(".file");
+
+  files.forEach(file => {
+
+    const name = file.dataset.name;
+
+    const oldText = (oldData[name] || "").toLowerCase();
+    const newText = (newData[name] || "").toLowerCase();
+
+    const hasMatch =
+      !search ||
+      oldText.includes(search) ||
+      newText.includes(search);
+
+    file.style.display = hasMatch ? "" : "none";
+  });
+
+  if (selectedName) {
+
+    const oldText = (oldData[selectedName] || "").toLowerCase();
+    const newText = (newData[selectedName] || "").toLowerCase();
+
+    const stillVisible =
+      !search ||
+      oldText.includes(search) ||
+      newText.includes(search);
+
+    if (stillVisible) {
+      show(selectedName);
+    }
+    else {
+      document.getElementById("viewer").innerHTML =
+        "No matching text in selected file";
+    }
+  }
 }
 
 function show(name) {
@@ -294,6 +380,8 @@ function show(name) {
   const B = b.split("\n");
 
   viewer.innerHTML = diffBlocks(A, B);
+
+  highlightSearch();
 }
 
 function diffBlocks(a, b) {
@@ -340,6 +428,37 @@ function diffBlocks(a, b) {
 function wrap(text, type) {
   if (text === "") return `<div class="block ${type}">&nbsp;</div>`;
   return `<div class="block ${type}">${escapeHtml(text)}</div>`;
+}
+
+function highlightSearch() {
+
+  const search = document
+    .getElementById("searchBox")
+    .value
+    .trim();
+
+  if (!search) return;
+
+  const blocks = document.querySelectorAll(".block");
+
+  blocks.forEach(block => {
+
+    const original = block.textContent;
+
+    const regex = new RegExp(
+      escapeRegExp(search),
+      "gi"
+    );
+
+    block.innerHTML = escapeHtml(original).replace(
+      regex,
+      match => `<span class="highlight">${match}</span>`
+    );
+  });
+}
+
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function escapeHtml(t) {
