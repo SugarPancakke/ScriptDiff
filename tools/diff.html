@@ -58,6 +58,19 @@ body {
   color: #aaa;
 }
 
+/* NAV BUTTONS */
+.nav-btn {
+  padding: 10px 14px;
+  font-size: 14px;
+}
+
+#matchCounter {
+  min-width: 60px;
+  text-align: center;
+  color: #ccc;
+  font-size: 14px;
+}
+
 /* BUTTON */
 button {
   background: #4d4747;
@@ -180,6 +193,11 @@ button:active {
   padding: 0 1px;
 }
 
+.active-highlight {
+  background: #ff9800;
+  color: black;
+}
+
 /* DARK SCROLLBARS */
 .left::-webkit-scrollbar,
 .right::-webkit-scrollbar {
@@ -238,6 +256,12 @@ button:active {
     oninput="runSearch()"
   >
 
+  <button class="nav-btn" onclick="gotoMatch(currentMatch - 1)">↑</button>
+
+  <button class="nav-btn" onclick="gotoMatch(currentMatch + 1)">↓</button>
+
+  <div id="matchCounter">0 / 0</div>
+
 </div>
 
 <div class="container">
@@ -249,6 +273,9 @@ button:active {
 let oldData = {};
 let newData = {};
 let selectedName = null;
+
+let matches = [];
+let currentMatch = 0;
 
 function cleanText(t) {
   return t.replace(/\r/g, "");
@@ -360,6 +387,9 @@ function runSearch() {
     else {
       document.getElementById("viewer").innerHTML =
         "No matching text in selected file";
+
+      document.getElementById("matchCounter").textContent =
+        "0 / 0";
     }
   }
 }
@@ -437,7 +467,14 @@ function highlightSearch() {
     .value
     .trim();
 
-  if (!search) return;
+  matches = [];
+  currentMatch = 0;
+
+  if (!search) {
+    document.getElementById("matchCounter").textContent =
+      "0 / 0";
+    return;
+  }
 
   const blocks = document.querySelectorAll(".block");
 
@@ -455,6 +492,40 @@ function highlightSearch() {
       match => `<span class="highlight">${match}</span>`
     );
   });
+
+  matches = [...document.querySelectorAll(".highlight")];
+
+  if (matches.length) {
+    gotoMatch(0);
+  }
+  else {
+    document.getElementById("matchCounter").textContent =
+      "0 / 0";
+  }
+}
+
+function gotoMatch(index) {
+
+  if (!matches.length) return;
+
+  matches.forEach(m => {
+    m.classList.remove("active-highlight");
+  });
+
+  currentMatch =
+    (index + matches.length) % matches.length;
+
+  const el = matches[currentMatch];
+
+  el.classList.add("active-highlight");
+
+  el.scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+
+  document.getElementById("matchCounter").textContent =
+    `${currentMatch + 1} / ${matches.length}`;
 }
 
 function escapeRegExp(text) {
@@ -467,6 +538,29 @@ function escapeHtml(t) {
     .replace(/</g,"&lt;")
     .replace(/>/g,"&gt;");
 }
+
+document.addEventListener("keydown", e => {
+
+  if (e.key === "Enter") {
+
+    if (e.shiftKey) {
+      gotoMatch(currentMatch - 1);
+    }
+    else {
+      gotoMatch(currentMatch + 1);
+    }
+  }
+
+  if (e.key === "F3") {
+    e.preventDefault();
+    gotoMatch(currentMatch + 1);
+  }
+
+  if (e.ctrlKey && e.key.toLowerCase() === "f") {
+    e.preventDefault();
+    document.getElementById("searchBox").focus();
+  }
+});
 </script>
 
 </body>
