@@ -23,6 +23,11 @@ body {
   top: 0;
 }
 
+/* PUSH SEARCH TO FAR RIGHT */
+.spacer {
+  flex: 1;
+}
+
 .upload-label {
   display: flex;
   flex-direction: column;
@@ -35,6 +40,22 @@ body {
   color: white;
   border: none;
   padding: 6px;
+}
+
+/* SEARCH */
+.search-box {
+  background: #3d3838;
+  color: white;
+  border: none;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: monospace;
+  width: 240px;
+  outline: none;
+}
+
+.search-box::placeholder {
+  color: #aaa;
 }
 
 /* BUTTON */
@@ -72,14 +93,12 @@ button:active {
 .file {
   position: relative;
 
-  padding: 8px 38px 8px 8px;
+  padding: 8px 34px 8px 8px;
   border-bottom: 1px solid #3d3838;
   cursor: pointer;
 
   word-break: break-word;
   overflow-wrap: anywhere;
-
-  transition: background 0.15s, color 0.15s;
 }
 
 .file:hover {
@@ -90,18 +109,6 @@ button:active {
   background: #4a4040;
 }
 
-/* FILE TEXT STATES */
-.file.modified,
-.file.added,
-.file.removed {
-  font-weight: bold;
-  color: #ffffff;
-}
-
-.file.unchanged {
-  color: #9a9a9a;
-}
-
 /* STATUS DOT */
 .dot {
   position: absolute;
@@ -109,31 +116,26 @@ button:active {
   right: 12px;
   transform: translateY(-50%);
 
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-
-  transition: 0.15s;
 }
 
 /* DOT COLORS */
 .modified {
   background: #fbc02d;
-  box-shadow: 0 0 6px rgba(251,192,45,0.7);
 }
 
 .added {
   background: #43a047;
-  box-shadow: 0 0 6px rgba(67,160,71,0.7);
 }
 
 .removed {
   background: #e53935;
-  box-shadow: 0 0 6px rgba(229,57,53,0.7);
 }
 
 .unchanged {
-  background: #777;
+  display: none;
 }
 
 /* RIGHT VIEWER */
@@ -168,6 +170,14 @@ button:active {
   border-left: 3px solid #b71c1c;
   text-decoration: line-through;
   opacity: 0.85;
+}
+
+/* SEARCH HIGHLIGHT */
+.highlight {
+  background: #ffd54f;
+  color: black;
+  border-radius: 2px;
+  padding: 0 1px;
 }
 
 /* DARK SCROLLBARS */
@@ -217,6 +227,16 @@ button:active {
   </label>
 
   <button onclick="loadFiles()">Compare</button>
+
+  <div class="spacer"></div>
+
+  <input
+    type="text"
+    id="searchBox"
+    class="search-box"
+    placeholder="Search inside files..."
+    oninput="runSearch()"
+  >
 
 </div>
 
@@ -276,7 +296,11 @@ function loadFiles() {
   selectedName = null;
 
   readFiles(oldFiles.files, oldData, () => {
-    readFiles(newFiles.files, newData, compare);
+
+    readFiles(newFiles.files, newData, () => {
+
+      compare();
+    });
   });
 }
 
@@ -291,39 +315,84 @@ function compare() {
     ...Object.keys(newData)
   ]);
 
-  [...all]
-    .sort()
-    .forEach(name => {
+  [...all].sort().forEach(name => {
 
-      const o = oldData[name];
-      const n = newData[name];
+    const o = oldData[name];
+    const n = newData[name];
 
-      let status = "unchanged";
+    let status = "unchanged";
 
-      if (!o) {
-        status = "added";
-      }
-      else if (!n) {
-        status = "removed";
-      }
-      else if (o !== n) {
-        status = "modified";
-      }
+    if (!o) {
+      status = "added";
+    }
+    else if (!n) {
+      status = "removed";
+    }
+    else if (o !== n) {
+      status = "modified";
+    }
 
-      const div = document.createElement("div");
+    const div = document.createElement("div");
 
-      div.className = `file ${status}`;
-      div.dataset.name = name;
+    div.className = "file";
+    div.dataset.name = name;
 
-      div.onclick = () => show(name);
+    div.onclick = () => show(name);
 
-      div.innerHTML = `
-        <span>${escapeHtml(name)}</span>
-        <span class="dot ${status}"></span>
-      `;
+    div.innerHTML = `
+      <span>${escapeHtml(name)}</span>
+      <span class="dot ${status}"></span>
+    `;
 
-      list.appendChild(div);
-    });
+    list.appendChild(div);
+  });
+
+  runSearch();
+}
+
+function runSearch() {
+
+  const search = document
+    .getElementById("searchBox")
+    .value
+    .trim()
+    .toLowerCase();
+
+  const files = document.querySelectorAll(".file");
+
+  files.forEach(file => {
+
+    const name = file.dataset.name;
+
+    const oldText = (oldData[name] || "").toLowerCase();
+    const newText = (newData[name] || "").toLowerCase();
+
+    const hasMatch =
+      !search ||
+      oldText.includes(search) ||
+      newText.includes(search);
+
+    file.style.display = hasMatch ? "" : "none";
+  });
+
+  if (selectedName) {
+
+    const oldText = (oldData[selectedName] || "").toLowerCase();
+    const newText = (newData[selectedName] || "").toLowerCase();
+
+    const stillVisible =
+      !search ||
+      oldText.includes(search) ||
+      newText.includes(search);
+
+    if (stillVisible) {
+      show(selectedName);
+    }
+    else {
+      document.getElementById("viewer").innerHTML =
+        "No matching text in selected file";
+    }
+  }
 }
 
 function show(name) {
@@ -331,7 +400,11 @@ function show(name) {
   selectedName = name;
 
   document.querySelectorAll(".file").forEach(el => {
-    el.classList.toggle("active", el.dataset.name === name);
+
+    el.classList.toggle(
+      "active",
+      el.dataset.name === name
+    );
   });
 
   const a = oldData[name] || "";
@@ -343,6 +416,8 @@ function show(name) {
   const B = b.split("\n");
 
   viewer.innerHTML = diffBlocks(A, B);
+
+  highlightSearch();
 }
 
 function diffBlocks(a, b) {
@@ -356,9 +431,11 @@ function diffBlocks(a, b) {
     for (let j = b.length - 1; j >= 0; j--) {
 
       if (a[i] === b[j]) {
+
         dp[i][j] = dp[i + 1][j + 1] + 1;
       }
       else {
+
         dp[i][j] = Math.max(
           dp[i + 1][j],
           dp[i][j + 1]
@@ -396,10 +473,12 @@ function diffBlocks(a, b) {
   }
 
   while (i < a.length) {
+
     out += wrap(a[i++], "remove");
   }
 
   while (j < b.length) {
+
     out += wrap(b[j++], "add");
   }
 
@@ -409,6 +488,7 @@ function diffBlocks(a, b) {
 function wrap(text, type) {
 
   if (text === "") {
+
     return `<div class="block ${type}">&nbsp;</div>`;
   }
 
@@ -417,6 +497,47 @@ function wrap(text, type) {
       ${escapeHtml(text)}
     </div>
   `;
+}
+
+function highlightSearch() {
+
+  const search = document
+    .getElementById("searchBox")
+    .value
+    .trim();
+
+  if (!search) {
+    return;
+  }
+
+  const blocks = document.querySelectorAll(".block");
+
+  blocks.forEach(block => {
+
+    const original = block.textContent;
+
+    const regex = new RegExp(
+      escapeRegExp(search),
+      "gi"
+    );
+
+    block.innerHTML = escapeHtml(original).replace(
+      regex,
+      match => `
+        <span class="highlight">
+          ${match}
+        </span>
+      `
+    );
+  });
+}
+
+function escapeRegExp(text) {
+
+  return text.replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&"
+  );
 }
 
 function escapeHtml(t) {
