@@ -120,8 +120,8 @@ function extractIDs() {
 
   const text = document.getElementById("input").value;
 
-  // Match S followed by 4 digits
-  const matches = text.match(/S\d{4}/g) || [];
+  // Match S or SL followed by 4 digits
+  const matches = text.match(/SL?\d{4}/g) || [];
 
   // Remove duplicates
   const unique = [...new Set(matches)];
