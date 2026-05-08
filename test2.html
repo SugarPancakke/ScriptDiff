@@ -234,7 +234,7 @@ button:active {
     type="text"
     id="searchBox"
     class="search-box"
-    placeholder="Search inside files..."
+    placeholder="Search..."
     oninput="runSearch()"
   >
 
@@ -255,34 +255,20 @@ function cleanText(t) {
 }
 
 function normalize(file) {
-  return (file.webkitRelativePath || file.name)
-    .split("/")
-    .slice(1)
-    .join("/");
+  return (file.webkitRelativePath || file.name).split("/").slice(1).join("/");
 }
 
 function readFiles(files, store, cb) {
-
   let done = 0;
-
-  if (!files.length) {
-    cb();
-    return;
-  }
+  if (!files.length) return cb();
 
   for (let f of files) {
-
     const r = new FileReader();
 
     r.onload = e => {
-
       store[normalize(f)] = cleanText(e.target.result);
-
       done++;
-
-      if (done === files.length) {
-        cb();
-      }
+      if (done === files.length) cb();
     };
 
     r.readAsText(f);
@@ -290,57 +276,40 @@ function readFiles(files, store, cb) {
 }
 
 function loadFiles() {
-
   oldData = {};
   newData = {};
   selectedName = null;
 
   readFiles(oldFiles.files, oldData, () => {
-
-    readFiles(newFiles.files, newData, () => {
-
-      compare();
-    });
+    readFiles(newFiles.files, newData, compare);
   });
 }
 
 function compare() {
 
   const list = document.getElementById("fileList");
-
   list.innerHTML = "";
 
-  const all = new Set([
-    ...Object.keys(oldData),
-    ...Object.keys(newData)
-  ]);
+  const all = new Set([...Object.keys(oldData), ...Object.keys(newData)]);
 
-  [...all].sort().forEach(name => {
+  all.forEach(name => {
 
     const o = oldData[name];
     const n = newData[name];
 
     let status = "unchanged";
-
-    if (!o) {
-      status = "added";
-    }
-    else if (!n) {
-      status = "removed";
-    }
-    else if (o !== n) {
-      status = "modified";
-    }
+    if (!o) status = "added";
+    else if (!n) status = "removed";
+    else if (o !== n) status = "modified";
 
     const div = document.createElement("div");
-
     div.className = "file";
     div.dataset.name = name;
 
     div.onclick = () => show(name);
 
     div.innerHTML = `
-      <span>${escapeHtml(name)}</span>
+      <span>${name}</span>
       <span class="dot ${status}"></span>
     `;
 
@@ -400,16 +369,11 @@ function show(name) {
   selectedName = name;
 
   document.querySelectorAll(".file").forEach(el => {
-
-    el.classList.toggle(
-      "active",
-      el.dataset.name === name
-    );
+    el.classList.toggle("active", el.dataset.name === name);
   });
 
   const a = oldData[name] || "";
   const b = newData[name] || "";
-
   const viewer = document.getElementById("viewer");
 
   const A = a.split("\n");
@@ -427,76 +391,43 @@ function diffBlocks(a, b) {
     .map(() => Array(b.length + 1).fill(0));
 
   for (let i = a.length - 1; i >= 0; i--) {
-
     for (let j = b.length - 1; j >= 0; j--) {
-
       if (a[i] === b[j]) {
-
         dp[i][j] = dp[i + 1][j + 1] + 1;
-      }
-      else {
-
-        dp[i][j] = Math.max(
-          dp[i + 1][j],
-          dp[i][j + 1]
-        );
+      } else {
+        dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);
       }
     }
   }
 
-  let i = 0;
-  let j = 0;
-
+  let i = 0, j = 0;
   let out = "";
 
   while (i < a.length && j < b.length) {
 
     if (a[i] === b[j]) {
-
       out += wrap(a[i], "");
-
-      i++;
-      j++;
+      i++; j++;
     }
     else if (dp[i + 1][j] >= dp[i][j + 1]) {
-
       out += wrap(a[i], "remove");
-
       i++;
     }
     else {
-
       out += wrap(b[j], "add");
-
       j++;
     }
   }
 
-  while (i < a.length) {
-
-    out += wrap(a[i++], "remove");
-  }
-
-  while (j < b.length) {
-
-    out += wrap(b[j++], "add");
-  }
+  while (i < a.length) out += wrap(a[i++], "remove");
+  while (j < b.length) out += wrap(b[j++], "add");
 
   return out;
 }
 
 function wrap(text, type) {
-
-  if (text === "") {
-
-    return `<div class="block ${type}">&nbsp;</div>`;
-  }
-
-  return `
-    <div class="block ${type}">
-      ${escapeHtml(text)}
-    </div>
-  `;
+  if (text === "") return `<div class="block ${type}">&nbsp;</div>`;
+  return `<div class="block ${type}">${escapeHtml(text)}</div>`;
 }
 
 function highlightSearch() {
@@ -506,9 +437,7 @@ function highlightSearch() {
     .value
     .trim();
 
-  if (!search) {
-    return;
-  }
+  if (!search) return;
 
   const blocks = document.querySelectorAll(".block");
 
@@ -523,29 +452,20 @@ function highlightSearch() {
 
     block.innerHTML = escapeHtml(original).replace(
       regex,
-      match => `
-        <span class="highlight">
-          ${match}
-        </span>
-      `
+      match => `<span class="highlight">${match}</span>`
     );
   });
 }
 
 function escapeRegExp(text) {
-
-  return text.replace(
-    /[.*+?^${}()|[\]\\]/g,
-    "\\$&"
-  );
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function escapeHtml(t) {
-
   return t
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;");
 }
 </script>
 
