@@ -23,11 +23,6 @@ body {
   top: 0;
 }
 
-/* PUSH SEARCH TO FAR RIGHT */
-.spacer {
-  flex: 1;
-}
-
 .upload-label {
   display: flex;
   flex-direction: column;
@@ -40,22 +35,6 @@ body {
   color: white;
   border: none;
   padding: 6px;
-}
-
-/* SEARCH */
-.search-box {
-  background: #3d3838;
-  color: white;
-  border: none;
-  padding: 10px 12px;
-  font-size: 14px;
-  font-family: monospace;
-  width: 240px;
-  outline: none;
-}
-
-.search-box::placeholder {
-  color: #aaa;
 }
 
 /* BUTTON */
@@ -93,12 +72,14 @@ button:active {
 .file {
   position: relative;
 
-  padding: 8px 34px 8px 8px;
+  padding: 8px 38px 8px 8px;
   border-bottom: 1px solid #3d3838;
   cursor: pointer;
 
   word-break: break-word;
   overflow-wrap: anywhere;
+
+  transition: background 0.15s, color 0.15s;
 }
 
 .file:hover {
@@ -109,6 +90,18 @@ button:active {
   background: #4a4040;
 }
 
+/* FILE TEXT STATES */
+.file.modified,
+.file.added,
+.file.removed {
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.file.unchanged {
+  color: #9a9a9a;
+}
+
 /* STATUS DOT */
 .dot {
   position: absolute;
@@ -116,26 +109,31 @@ button:active {
   right: 12px;
   transform: translateY(-50%);
 
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
+
+  transition: 0.15s;
 }
 
 /* DOT COLORS */
 .modified {
   background: #fbc02d;
+  box-shadow: 0 0 6px rgba(251,192,45,0.7);
 }
 
 .added {
   background: #43a047;
+  box-shadow: 0 0 6px rgba(67,160,71,0.7);
 }
 
 .removed {
   background: #e53935;
+  box-shadow: 0 0 6px rgba(229,57,53,0.7);
 }
 
 .unchanged {
-  display: none;
+  background: #777;
 }
 
 /* RIGHT VIEWER */
@@ -170,14 +168,6 @@ button:active {
   border-left: 3px solid #b71c1c;
   text-decoration: line-through;
   opacity: 0.85;
-}
-
-/* SEARCH HIGHLIGHT */
-.highlight {
-  background: #ffd54f;
-  color: black;
-  border-radius: 2px;
-  padding: 0 1px;
 }
 
 /* DARK SCROLLBARS */
@@ -228,16 +218,6 @@ button:active {
 
   <button onclick="loadFiles()">Compare</button>
 
-  <div class="spacer"></div>
-
-  <input
-    type="text"
-    id="searchBox"
-    class="search-box"
-    placeholder="Search..."
-    oninput="runSearch()"
-  >
-
 </div>
 
 <div class="container">
@@ -255,20 +235,34 @@ function cleanText(t) {
 }
 
 function normalize(file) {
-  return (file.webkitRelativePath || file.name).split("/").slice(1).join("/");
+  return (file.webkitRelativePath || file.name)
+    .split("/")
+    .slice(1)
+    .join("/");
 }
 
 function readFiles(files, store, cb) {
+
   let done = 0;
-  if (!files.length) return cb();
+
+  if (!files.length) {
+    cb();
+    return;
+  }
 
   for (let f of files) {
+
     const r = new FileReader();
 
     r.onload = e => {
+
       store[normalize(f)] = cleanText(e.target.result);
+
       done++;
-      if (done === files.length) cb();
+
+      if (done === files.length) {
+        cb();
+      }
     };
 
     r.readAsText(f);
@@ -276,6 +270,7 @@ function readFiles(files, store, cb) {
 }
 
 function loadFiles() {
+
   oldData = {};
   newData = {};
   selectedName = null;
@@ -288,58 +283,47 @@ function loadFiles() {
 function compare() {
 
   const list = document.getElementById("fileList");
+
   list.innerHTML = "";
 
-  const all = new Set([...Object.keys(oldData), ...Object.keys(newData)]);
+  const all = new Set([
+    ...Object.keys(oldData),
+    ...Object.keys(newData)
+  ]);
 
-  all.forEach(name => {
+  [...all]
+    .sort()
+    .forEach(name => {
 
-    const o = oldData[name];
-    const n = newData[name];
+      const o = oldData[name];
+      const n = newData[name];
 
-    let status = "unchanged";
-    if (!o) status = "added";
-    else if (!n) status = "removed";
-    else if (o !== n) status = "modified";
+      let status = "unchanged";
 
-    const div = document.createElement("div");
-    div.className = "file";
-    div.dataset.name = name;
+      if (!o) {
+        status = "added";
+      }
+      else if (!n) {
+        status = "removed";
+      }
+      else if (o !== n) {
+        status = "modified";
+      }
 
-    div.onclick = () => show(name);
+      const div = document.createElement("div");
 
-    div.innerHTML = `
-      <span>${name}</span>
-      <span class="dot ${status}"></span>
-    `;
+      div.className = `file ${status}`;
+      div.dataset.name = name;
 
-    list.appendChild(div);
-  });
+      div.onclick = () => show(name);
 
-  runSearch();
-}
+      div.innerHTML = `
+        <span>${escapeHtml(name)}</span>
+        <span class="dot ${status}"></span>
+      `;
 
-function runSearch() {
-
-  const search = document
-    .getElementById("searchBox")
-    .value
-    .toLowerCase();
-
-  document.querySelectorAll(".file").forEach(file => {
-
-    const name = file.dataset.name.toLowerCase();
-
-    if (!search || name.includes(search)) {
-      file.style.display = "";
-    } else {
-      file.style.display = "none";
-    }
-  });
-
-  if (selectedName) {
-    show(selectedName);
-  }
+      list.appendChild(div);
+    });
 }
 
 function show(name) {
@@ -352,14 +336,13 @@ function show(name) {
 
   const a = oldData[name] || "";
   const b = newData[name] || "";
+
   const viewer = document.getElementById("viewer");
 
   const A = a.split("\n");
   const B = b.split("\n");
 
   viewer.innerHTML = diffBlocks(A, B);
-
-  highlightSearch();
 }
 
 function diffBlocks(a, b) {
@@ -369,81 +352,79 @@ function diffBlocks(a, b) {
     .map(() => Array(b.length + 1).fill(0));
 
   for (let i = a.length - 1; i >= 0; i--) {
+
     for (let j = b.length - 1; j >= 0; j--) {
+
       if (a[i] === b[j]) {
         dp[i][j] = dp[i + 1][j + 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);
+      }
+      else {
+        dp[i][j] = Math.max(
+          dp[i + 1][j],
+          dp[i][j + 1]
+        );
       }
     }
   }
 
-  let i = 0, j = 0;
+  let i = 0;
+  let j = 0;
+
   let out = "";
 
   while (i < a.length && j < b.length) {
 
     if (a[i] === b[j]) {
+
       out += wrap(a[i], "");
-      i++; j++;
+
+      i++;
+      j++;
     }
     else if (dp[i + 1][j] >= dp[i][j + 1]) {
+
       out += wrap(a[i], "remove");
+
       i++;
     }
     else {
+
       out += wrap(b[j], "add");
+
       j++;
     }
   }
 
-  while (i < a.length) out += wrap(a[i++], "remove");
-  while (j < b.length) out += wrap(b[j++], "add");
+  while (i < a.length) {
+    out += wrap(a[i++], "remove");
+  }
+
+  while (j < b.length) {
+    out += wrap(b[j++], "add");
+  }
 
   return out;
 }
 
 function wrap(text, type) {
-  if (text === "") return `<div class="block ${type}">&nbsp;</div>`;
-  return `<div class="block ${type}">${escapeHtml(text)}</div>`;
-}
 
-function highlightSearch() {
+  if (text === "") {
+    return `<div class="block ${type}">&nbsp;</div>`;
+  }
 
-  const search = document
-    .getElementById("searchBox")
-    .value
-    .trim();
-
-  if (!search) return;
-
-  const blocks = document.querySelectorAll(".block");
-
-  blocks.forEach(block => {
-
-    const original = block.textContent;
-
-    const regex = new RegExp(
-      escapeRegExp(search),
-      "gi"
-    );
-
-    block.innerHTML = escapeHtml(original).replace(
-      regex,
-      match => `<span class="highlight">${match}</span>`
-    );
-  });
-}
-
-function escapeRegExp(text) {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return `
+    <div class="block ${type}">
+      ${escapeHtml(text)}
+    </div>
+  `;
 }
 
 function escapeHtml(t) {
+
   return t
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 </script>
 
