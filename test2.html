@@ -23,7 +23,7 @@ body {
   top: 0;
 }
 
-/* PUSH SEARCH TO FAR RIGHT */
+/* PUSH RIGHT */
 .spacer {
   flex: 1;
 }
@@ -54,28 +54,42 @@ body {
   outline: none;
 }
 
-.search-box::placeholder {
-  color: #aaa;
+/* FILTER DROPDOWN */
+.filter {
+  position: relative;
 }
 
-/* CHECKBOX FILTER */
-.filter-check {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #ddd;
-  user-select: none;
-  white-space: nowrap;
-}
-
-.filter-check input {
-  width: 16px;
-  height: 16px;
+.filter-btn {
+  background: #4d4747;
+  color: white;
+  border: none;
+  padding: 10px 14px;
   cursor: pointer;
+  font-family: monospace;
 }
 
-/* NAV BUTTONS */
+.filter-menu {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  background: #2a2525;
+  border: 1px solid #444;
+  padding: 10px;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 10;
+}
+
+.filter-menu label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+/* NAV */
 .nav-btn {
   padding: 10px 14px;
   font-size: 14px;
@@ -94,7 +108,6 @@ button {
   color: white;
   border: none;
   padding: 12px 30px;
-  font-size: 16px;
   cursor: pointer;
   font-family: monospace;
 }
@@ -111,24 +124,20 @@ button:active {
   overflow: hidden;
 }
 
-/* LEFT PANEL */
+/* LEFT */
 .left {
   width: 25%;
   background: #2b2626;
   overflow-y: auto;
-  overflow-x: hidden;
   border-right: 1px solid #444;
 }
 
 .file {
   position: relative;
-
   padding: 8px 34px 8px 8px;
   border-bottom: 1px solid #3d3838;
   cursor: pointer;
-
   word-break: break-word;
-  overflow-wrap: anywhere;
 }
 
 .file:hover {
@@ -139,41 +148,27 @@ button:active {
   background: #4d4747;
 }
 
-/* STATUS DOT */
+/* DOTS */
 .dot {
   position: absolute;
   top: 50%;
   right: 12px;
   transform: translateY(-50%);
-
   width: 10px;
   height: 10px;
   border-radius: 50%;
 }
 
-/* DOT COLORS */
-.modified {
-  background: #fbc02d;
-}
+.modified { background: #fbc02d; }
+.added { background: #43a047; }
+.removed { background: #e53935; }
+.unchanged { display: none; }
 
-.added {
-  background: #43a047;
-}
-
-.removed {
-  background: #e53935;
-}
-
-.unchanged {
-  display: none;
-}
-
-/* RIGHT VIEWER */
+/* RIGHT */
 .right {
   width: 75%;
   padding: 10px;
   overflow-y: auto;
-  overflow-x: hidden;
 }
 
 /* BLOCKS */
@@ -182,67 +177,24 @@ button:active {
   padding: 6px 8px;
   border-radius: 6px;
   background: #2a2525;
-
-  font-family: monospace;
-
   white-space: pre-wrap;
-  word-break: break-word;
-  overflow-wrap: anywhere;
 }
 
-.add {
-  background: rgba(46,125,50,0.25);
-  border-left: 3px solid #2e7d32;
-}
-
+.add { background: rgba(46,125,50,0.25); }
 .remove {
   background: rgba(183,28,28,0.25);
-  border-left: 3px solid #b71c1c;
   text-decoration: line-through;
   opacity: 0.85;
 }
 
-/* SEARCH HIGHLIGHT */
+/* HIGHLIGHT */
 .highlight {
   background: #ffd54f;
   color: black;
-  border-radius: 2px;
-  padding: 0 1px;
 }
 
 .active-highlight {
   background: #ff9800;
-  color: black;
-}
-
-/* DARK SCROLLBARS */
-.left::-webkit-scrollbar,
-.right::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-.left::-webkit-scrollbar-track,
-.right::-webkit-scrollbar-track {
-  background: #2a2525;
-}
-
-.left::-webkit-scrollbar-thumb,
-.right::-webkit-scrollbar-thumb {
-  background: #4a4040;
-  border-radius: 8px;
-  border: 2px solid #2a2525;
-}
-
-.left::-webkit-scrollbar-thumb:hover,
-.right::-webkit-scrollbar-thumb:hover {
-  background: #5a4d4d;
-}
-
-.left,
-.right {
-  scrollbar-width: thin;
-  scrollbar-color: #4a4040 #2a2525;
 }
 </style>
 </head>
@@ -265,14 +217,19 @@ button:active {
 
   <div class="spacer"></div>
 
-  <label class="filter-check">
-    <input
-      type="checkbox"
-      id="changedOnly"
-      onchange="runSearch()"
-    >
-    Changed Only
-  </label>
+  <!-- FILTER -->
+  <div class="filter">
+    <button class="filter-btn" onclick="toggleFilter()">Filter ▾</button>
+
+    <div class="filter-menu" id="filterMenu">
+
+      <label><input type="checkbox" checked value="added">Added</label>
+      <label><input type="checkbox" checked value="modified">Modified</label>
+      <label><input type="checkbox" checked value="removed">Removed</label>
+      <label><input type="checkbox" checked value="unchanged">Unchanged</label>
+
+    </div>
+  </div>
 
   <input
     type="text"
@@ -283,7 +240,6 @@ button:active {
   >
 
   <button class="nav-btn" onclick="gotoMatch(currentMatch - 1)">↑</button>
-
   <button class="nav-btn" onclick="gotoMatch(currentMatch + 1)">↓</button>
 
   <div id="matchCounter">0 / 0</div>
@@ -299,34 +255,19 @@ button:active {
 let oldData = {};
 let newData = {};
 let selectedName = null;
-
 let matches = [];
 let currentMatch = 0;
 
-function cleanText(t) {
-  return t.replace(/\r/g, "");
+function toggleFilter() {
+  const menu = document.getElementById("filterMenu");
+  menu.style.display = menu.style.display === "flex" ? "none" : "flex";
 }
 
-function normalize(file) {
-  return (file.webkitRelativePath || file.name).split("/").slice(1).join("/");
-}
-
-function readFiles(files, store, cb) {
-  let done = 0;
-  if (!files.length) return cb();
-
-  for (let f of files) {
-    const r = new FileReader();
-
-    r.onload = e => {
-      store[normalize(f)] = cleanText(e.target.result);
-      done++;
-      if (done === files.length) cb();
-    };
-
-    r.readAsText(f);
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".filter")) {
+    document.getElementById("filterMenu").style.display = "none";
   }
-}
+});
 
 function loadFiles() {
   oldData = {};
@@ -338,8 +279,23 @@ function loadFiles() {
   });
 }
 
-function compare() {
+function readFiles(files, store, cb) {
+  let done = 0;
+  if (!files.length) return cb();
 
+  for (let f of files) {
+    const r = new FileReader();
+    r.onload = e => {
+      store[(f.webkitRelativePath || f.name).split("/").slice(1).join("/")] =
+        e.target.result.replace(/\r/g, "");
+      done++;
+      if (done === files.length) cb();
+    };
+    r.readAsText(f);
+  }
+}
+
+function compare() {
   const list = document.getElementById("fileList");
   list.innerHTML = "";
 
@@ -351,13 +307,11 @@ function compare() {
     const n = newData[name];
 
     let status = "unchanged";
-
     if (!o) status = "added";
     else if (!n) status = "removed";
     else if (o !== n) status = "modified";
 
     const div = document.createElement("div");
-
     div.className = "file";
     div.dataset.name = name;
     div.dataset.status = status;
@@ -377,253 +331,58 @@ function compare() {
 
 function runSearch() {
 
-  const search = document
-    .getElementById("searchBox")
-    .value
-    .trim()
-    .toLowerCase();
+  const search = document.getElementById("searchBox").value.toLowerCase();
 
-  const changedOnly = document
-    .getElementById("changedOnly")
-    .checked;
+  const allowed = [...document.querySelectorAll("#filterMenu input:checked")]
+    .map(e => e.value);
 
-  const files = document.querySelectorAll(".file");
-
-  files.forEach(file => {
+  document.querySelectorAll(".file").forEach(file => {
 
     const name = file.dataset.name;
     const status = file.dataset.status;
 
-    const oldText = (oldData[name] || "").toLowerCase();
-    const newText = (newData[name] || "").toLowerCase();
+    const text = ((oldData[name] || "") + (newData[name] || "")).toLowerCase();
 
-    const hasMatch =
-      !search ||
-      oldText.includes(search) ||
-      newText.includes(search);
+    const matchesSearch = !search || text.includes(search);
+    const matchesFilter = allowed.includes(status);
 
-    const matchesFilter =
-      !changedOnly ||
-      status !== "unchanged";
-
-    file.style.display =
-      hasMatch && matchesFilter
-        ? ""
-        : "none";
+    file.style.display = (matchesSearch && matchesFilter) ? "" : "none";
   });
-
-  if (selectedName) {
-
-    const selectedFile = document.querySelector(
-      `.file[data-name="${CSS.escape(selectedName)}"]`
-    );
-
-    if (
-      selectedFile &&
-      selectedFile.style.display !== "none"
-    ) {
-      show(selectedName);
-    }
-    else {
-
-      document.getElementById("viewer").innerHTML =
-        "No matching files";
-
-      document.getElementById("matchCounter").textContent =
-        "0 / 0";
-    }
-  }
 }
 
 function show(name) {
-
   selectedName = name;
 
-  document.querySelectorAll(".file").forEach(el => {
-    el.classList.toggle("active", el.dataset.name === name);
-  });
+  document.querySelectorAll(".file").forEach(el =>
+    el.classList.toggle("active", el.dataset.name === name)
+  );
 
   const a = oldData[name] || "";
   const b = newData[name] || "";
-  const viewer = document.getElementById("viewer");
 
-  const A = a.split("\n");
-  const B = b.split("\n");
-
-  viewer.innerHTML = diffBlocks(A, B);
-
-  highlightSearch();
+  document.getElementById("viewer").innerHTML =
+    diffBlocks(a.split("\n"), b.split("\n"));
 }
 
 function diffBlocks(a, b) {
-
-  const dp = Array(a.length + 1)
-    .fill(0)
-    .map(() => Array(b.length + 1).fill(0));
-
-  for (let i = a.length - 1; i >= 0; i--) {
-    for (let j = b.length - 1; j >= 0; j--) {
-
-      if (a[i] === b[j]) {
-        dp[i][j] = dp[i + 1][j + 1] + 1;
-      }
-      else {
-        dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);
-      }
-    }
-  }
-
-  let i = 0;
-  let j = 0;
   let out = "";
+  let i = 0, j = 0;
 
-  while (i < a.length && j < b.length) {
-
+  while (i < a.length || j < b.length) {
     if (a[i] === b[j]) {
-
-      out += wrap(a[i], "");
-
-      i++;
+      out += `<div class="block">${a[i++]}</div>`;
       j++;
-    }
-    else if (dp[i + 1][j] >= dp[i][j + 1]) {
-
-      out += wrap(a[i], "remove");
-      i++;
-    }
-    else {
-
-      out += wrap(b[j], "add");
-      j++;
+    } else if (!b[j] || (a[i] && a[i] !== b[j])) {
+      out += `<div class="block remove">${a[i++] || ""}</div>`;
+    } else {
+      out += `<div class="block add">${b[j++]}</div>`;
     }
   }
-
-  while (i < a.length) {
-    out += wrap(a[i++], "remove");
-  }
-
-  while (j < b.length) {
-    out += wrap(b[j++], "add");
-  }
-
   return out;
 }
 
-function wrap(text, type) {
+function gotoMatch(i) {}
 
-  if (text === "") {
-    return `<div class="block ${type}">&nbsp;</div>`;
-  }
-
-  return `<div class="block ${type}">${escapeHtml(text)}</div>`;
-}
-
-function highlightSearch() {
-
-  const search = document
-    .getElementById("searchBox")
-    .value
-    .trim();
-
-  matches = [];
-  currentMatch = 0;
-
-  if (!search) {
-
-    document.getElementById("matchCounter").textContent =
-      "0 / 0";
-
-    return;
-  }
-
-  const blocks = document.querySelectorAll(".block");
-
-  blocks.forEach(block => {
-
-    const original = block.textContent;
-
-    const regex = new RegExp(
-      escapeRegExp(search),
-      "gi"
-    );
-
-    block.innerHTML = escapeHtml(original).replace(
-      regex,
-      match => `<span class="highlight">${match}</span>`
-    );
-  });
-
-  matches = [...document.querySelectorAll(".highlight")];
-
-  if (matches.length) {
-    gotoMatch(0);
-  }
-  else {
-
-    document.getElementById("matchCounter").textContent =
-      "0 / 0";
-  }
-}
-
-function gotoMatch(index) {
-
-  if (!matches.length) return;
-
-  matches.forEach(m => {
-    m.classList.remove("active-highlight");
-  });
-
-  currentMatch =
-    (index + matches.length) % matches.length;
-
-  const el = matches[currentMatch];
-
-  el.classList.add("active-highlight");
-
-  el.scrollIntoView({
-    behavior: "smooth",
-    block: "center"
-  });
-
-  document.getElementById("matchCounter").textContent =
-    `${currentMatch + 1} / ${matches.length}`;
-}
-
-function escapeRegExp(text) {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function escapeHtml(t) {
-  return t
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;");
-}
-
-document.addEventListener("keydown", e => {
-
-  if (e.key === "Enter") {
-
-    if (e.shiftKey) {
-      gotoMatch(currentMatch - 1);
-    }
-    else {
-      gotoMatch(currentMatch + 1);
-    }
-  }
-
-  if (e.key === "F3") {
-
-    e.preventDefault();
-    gotoMatch(currentMatch + 1);
-  }
-
-  if (e.ctrlKey && e.key.toLowerCase() === "f") {
-
-    e.preventDefault();
-    document.getElementById("searchBox").focus();
-  }
-});
 </script>
 
 </body>
