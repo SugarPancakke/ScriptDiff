@@ -58,21 +58,21 @@ body {
   color: #aaa;
 }
 
-/* FILTER */
-.filter-box {
-  background: #3d3838;
-  color: white;
-  border: none;
-  padding: 10px 12px;
+/* CHECKBOX FILTER */
+.filter-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 14px;
-  font-family: monospace;
-  outline: none;
-  cursor: pointer;
+  color: #ddd;
+  user-select: none;
+  white-space: nowrap;
 }
 
-.filter-box option {
-  background: #3d3838;
-  color: white;
+.filter-check input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
 }
 
 /* NAV BUTTONS */
@@ -265,17 +265,14 @@ button:active {
 
   <div class="spacer"></div>
 
-  <select
-    id="filterBox"
-    class="filter-box"
-    onchange="runSearch()"
-  >
-    <option value="all">All</option>
-    <option value="added">Added</option>
-    <option value="modified">Modified</option>
-    <option value="removed">Removed</option>
-    <option value="unchanged">Unchanged</option>
-  </select>
+  <label class="filter-check">
+    <input
+      type="checkbox"
+      id="changedOnly"
+      onchange="runSearch()"
+    >
+    Changed Only
+  </label>
 
   <input
     type="text"
@@ -354,11 +351,13 @@ function compare() {
     const n = newData[name];
 
     let status = "unchanged";
+
     if (!o) status = "added";
     else if (!n) status = "removed";
     else if (o !== n) status = "modified";
 
     const div = document.createElement("div");
+
     div.className = "file";
     div.dataset.name = name;
     div.dataset.status = status;
@@ -384,9 +383,9 @@ function runSearch() {
     .trim()
     .toLowerCase();
 
-  const filter = document
-    .getElementById("filterBox")
-    .value;
+  const changedOnly = document
+    .getElementById("changedOnly")
+    .checked;
 
   const files = document.querySelectorAll(".file");
 
@@ -398,17 +397,17 @@ function runSearch() {
     const oldText = (oldData[name] || "").toLowerCase();
     const newText = (newData[name] || "").toLowerCase();
 
-    const matchesSearch =
+    const hasMatch =
       !search ||
       oldText.includes(search) ||
       newText.includes(search);
 
     const matchesFilter =
-      filter === "all" ||
-      status === filter;
+      !changedOnly ||
+      status !== "unchanged";
 
     file.style.display =
-      matchesSearch && matchesFilter
+      hasMatch && matchesFilter
         ? ""
         : "none";
   });
@@ -426,6 +425,7 @@ function runSearch() {
       show(selectedName);
     }
     else {
+
       document.getElementById("viewer").innerHTML =
         "No matching files";
 
@@ -463,41 +463,58 @@ function diffBlocks(a, b) {
 
   for (let i = a.length - 1; i >= 0; i--) {
     for (let j = b.length - 1; j >= 0; j--) {
+
       if (a[i] === b[j]) {
         dp[i][j] = dp[i + 1][j + 1] + 1;
-      } else {
+      }
+      else {
         dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);
       }
     }
   }
 
-  let i = 0, j = 0;
+  let i = 0;
+  let j = 0;
   let out = "";
 
   while (i < a.length && j < b.length) {
 
     if (a[i] === b[j]) {
+
       out += wrap(a[i], "");
-      i++; j++;
+
+      i++;
+      j++;
     }
     else if (dp[i + 1][j] >= dp[i][j + 1]) {
+
       out += wrap(a[i], "remove");
       i++;
     }
     else {
+
       out += wrap(b[j], "add");
       j++;
     }
   }
 
-  while (i < a.length) out += wrap(a[i++], "remove");
-  while (j < b.length) out += wrap(b[j++], "add");
+  while (i < a.length) {
+    out += wrap(a[i++], "remove");
+  }
+
+  while (j < b.length) {
+    out += wrap(b[j++], "add");
+  }
 
   return out;
 }
 
 function wrap(text, type) {
-  if (text === "") return `<div class="block ${type}">&nbsp;</div>`;
+
+  if (text === "") {
+    return `<div class="block ${type}">&nbsp;</div>`;
+  }
+
   return `<div class="block ${type}">${escapeHtml(text)}</div>`;
 }
 
@@ -512,8 +529,10 @@ function highlightSearch() {
   currentMatch = 0;
 
   if (!search) {
+
     document.getElementById("matchCounter").textContent =
       "0 / 0";
+
     return;
   }
 
@@ -540,6 +559,7 @@ function highlightSearch() {
     gotoMatch(0);
   }
   else {
+
     document.getElementById("matchCounter").textContent =
       "0 / 0";
   }
@@ -593,11 +613,13 @@ document.addEventListener("keydown", e => {
   }
 
   if (e.key === "F3") {
+
     e.preventDefault();
     gotoMatch(currentMatch + 1);
   }
 
   if (e.ctrlKey && e.key.toLowerCase() === "f") {
+
     e.preventDefault();
     document.getElementById("searchBox").focus();
   }
