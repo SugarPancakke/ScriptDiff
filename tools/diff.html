@@ -87,6 +87,38 @@ button:active {
   background: #3f3a3a;
 }
 
+/* FILTER WRAPPER */
+.filter {
+  position: relative;
+  z-index: 10000;
+}
+
+/* FILTER MENU */
+.filter-menu {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  background: #2a2525;
+  border: 1px solid #444;
+  padding: 10px;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 9999;
+}
+
+.filter-menu label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.filter-menu input[type="checkbox"] {
+  accent-color: #888;
+}
+
 /* LAYOUT */
 .container {
   display: flex;
@@ -105,11 +137,9 @@ button:active {
 
 .file {
   position: relative;
-
   padding: 8px 34px 8px 8px;
   border-bottom: 1px solid #3d3838;
   cursor: pointer;
-
   word-break: break-word;
   overflow-wrap: anywhere;
 }
@@ -128,28 +158,15 @@ button:active {
   top: 50%;
   right: 12px;
   transform: translateY(-50%);
-
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
 }
 
-/* DOT COLORS */
-.modified {
-  background: #fbc02d;
-}
-
-.added {
-  background: #43a047;
-}
-
-.removed {
-  background: #e53935;
-}
-
-.unchanged {
-  display: none;
-}
+.modified { background: #fbc02d; }
+.added { background: #43a047; }
+.removed { background: #e53935; }
+.unchanged { display: none; }
 
 /* RIGHT VIEWER */
 .right {
@@ -165,9 +182,7 @@ button:active {
   padding: 6px 8px;
   border-radius: 6px;
   background: #2a2525;
-
   font-family: monospace;
-
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: anywhere;
@@ -248,6 +263,17 @@ button:active {
 
   <div class="spacer"></div>
 
+  <div class="filter">
+    <button class="nav-btn" onclick="toggleFilter()">⚙</button>
+
+    <div class="filter-menu" id="filterMenu">
+      <label><input type="checkbox" checked value="added">Added</label>
+      <label><input type="checkbox" checked value="modified">Modified</label>
+      <label><input type="checkbox" checked value="removed">Removed</label>
+      <label><input type="checkbox" checked value="unchanged">Unchanged</label>
+    </div>
+  </div>
+
   <input
     type="text"
     id="searchBox"
@@ -257,7 +283,6 @@ button:active {
   >
 
   <button class="nav-btn" onclick="gotoMatch(currentMatch - 1)">↑</button>
-
   <button class="nav-btn" onclick="gotoMatch(currentMatch + 1)">↓</button>
 
   <div id="matchCounter">0 / 0</div>
@@ -277,12 +302,40 @@ let selectedName = null;
 let matches = [];
 let currentMatch = 0;
 
+function toggleFilter() {
+  const menu = document.getElementById("filterMenu");
+  menu.style.display = menu.style.display === "flex" ? "none" : "flex";
+}
+
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".filter")) {
+    document.getElementById("filterMenu").style.display = "none";
+  }
+});
+
+/* ✅ NEW: filter-only logic */
+function applyFilters() {
+  const allowed = [...document.querySelectorAll("#filterMenu input:checked")]
+    .map(e => e.value);
+
+  document.querySelectorAll(".file").forEach(file => {
+    const status = file.dataset.status;
+    file.style.display = allowed.includes(status) ? "" : "none";
+  });
+}
+
+/* ✅ hook checkbox changes */
+document.querySelectorAll("#filterMenu input").forEach(cb => {
+  cb.addEventListener("change", applyFilters);
+});
+
 function cleanText(t) {
   return t.replace(/\r/g, "");
 }
 
 function normalize(file) {
-  return (file.webkitRelativePath || file.name).split("/").slice(1).join("/");
+  const path = file.webkitRelativePath || file.name;
+  return path.includes("/") ? path.split("/").slice(1).join("/") : path;
 }
 
 function readFiles(files, store, cb) {
@@ -313,7 +366,6 @@ function loadFiles() {
 }
 
 function compare() {
-
   const list = document.getElementById("fileList");
   list.innerHTML = "";
 
@@ -332,6 +384,7 @@ function compare() {
     const div = document.createElement("div");
     div.className = "file";
     div.dataset.name = name;
+    div.dataset.status = status;
 
     div.onclick = () => show(name);
 
@@ -344,6 +397,7 @@ function compare() {
   });
 
   runSearch();
+  applyFilters(); /* ✅ important */
 }
 
 function runSearch() {
@@ -372,7 +426,6 @@ function runSearch() {
   });
 
   if (selectedName) {
-
     const oldText = (oldData[selectedName] || "").toLowerCase();
     const newText = (newData[selectedName] || "").toLowerCase();
 
@@ -383,8 +436,7 @@ function runSearch() {
 
     if (stillVisible) {
       show(selectedName);
-    }
-    else {
+    } else {
       document.getElementById("viewer").innerHTML =
         "No matching text in selected file";
 
@@ -394,6 +446,7 @@ function runSearch() {
   }
 }
 
+/* EVERYTHING BELOW UNCHANGED */
 function show(name) {
 
   selectedName = name;
