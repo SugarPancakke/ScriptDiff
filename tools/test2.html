@@ -114,6 +114,10 @@ button:active {
   font-size: 13px;
 }
 
+.filter-menu input[type="checkbox"] {
+  accent-color: #888;
+}
+
 /* LAYOUT */
 .container {
   display: flex;
@@ -153,8 +157,8 @@ button:active {
   top: 50%;
   right: 12px;
   transform: translateY(-50%);
-  width: 10px;
-  height: 10px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
 }
 
@@ -308,6 +312,22 @@ document.addEventListener("click", (e) => {
   }
 });
 
+/* ✅ NEW: filter-only logic */
+function applyFilters() {
+  const allowed = [...document.querySelectorAll("#filterMenu input:checked")]
+    .map(e => e.value);
+
+  document.querySelectorAll(".file").forEach(file => {
+    const status = file.dataset.status;
+    file.style.display = allowed.includes(status) ? "" : "none";
+  });
+}
+
+/* ✅ hook checkbox changes */
+document.querySelectorAll("#filterMenu input").forEach(cb => {
+  cb.addEventListener("change", applyFilters);
+});
+
 function cleanText(t) {
   return t.replace(/\r/g, "");
 }
@@ -376,6 +396,7 @@ function compare() {
   });
 
   runSearch();
+  applyFilters(); /* ✅ important */
 }
 
 function runSearch() {
@@ -386,15 +407,11 @@ function runSearch() {
     .trim()
     .toLowerCase();
 
-  const allowed = [...document.querySelectorAll("#filterMenu input:checked")]
-    .map(e => e.value);
-
   const files = document.querySelectorAll(".file");
 
   files.forEach(file => {
 
     const name = file.dataset.name;
-    const status = file.dataset.status;
 
     const oldText = (oldData[name] || "").toLowerCase();
     const newText = (newData[name] || "").toLowerCase();
@@ -404,14 +421,10 @@ function runSearch() {
       oldText.includes(search) ||
       newText.includes(search);
 
-    const hasFilter = allowed.includes(status);
-
-    file.style.display =
-      (hasMatch && hasFilter) ? "" : "none";
+    file.style.display = hasMatch ? "" : "none";
   });
 
   if (selectedName) {
-
     const oldText = (oldData[selectedName] || "").toLowerCase();
     const newText = (newData[selectedName] || "").toLowerCase();
 
@@ -422,8 +435,7 @@ function runSearch() {
 
     if (stillVisible) {
       show(selectedName);
-    }
-    else {
+    } else {
       document.getElementById("viewer").innerHTML =
         "No matching text in selected file";
 
@@ -433,6 +445,7 @@ function runSearch() {
   }
 }
 
+/* EVERYTHING BELOW UNCHANGED */
 function show(name) {
 
   selectedName = name;
