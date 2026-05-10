@@ -327,14 +327,40 @@ document.addEventListener("click", (e) => {
 });
 
 /* ---------------- FILTER (UNCHANGED) ---------------- */
-function applyFilters() {
+function updateVisibleFiles() {
+
+  const search = document
+    .getElementById("searchBox")
+    .value
+    .trim()
+    .toLowerCase();
+
   const allowed = [...document.querySelectorAll("#filterMenu input:checked")]
     .map(e => e.value);
 
   document.querySelectorAll(".file").forEach(file => {
+
+    const name = file.dataset.name;
     const status = file.dataset.status;
-    file.style.display = allowed.includes(status) ? "" : "none";
+
+    const oldText = (oldData[name] || "").toLowerCase();
+    const newText = (newData[name] || "").toLowerCase();
+
+    const matchesSearch =
+      !search ||
+      oldText.includes(search) ||
+      newText.includes(search);
+
+    const matchesFilter =
+      allowed.includes(status);
+
+   updateVisibleFiles();
+      return;
   });
+}
+
+function applyFilters() {
+  updateVisibleFiles();
 }
 
 document.querySelectorAll("#filterMenu input").forEach(cb => {
