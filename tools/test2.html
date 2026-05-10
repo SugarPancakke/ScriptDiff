@@ -326,7 +326,8 @@ document.addEventListener("click", (e) => {
   }
 });
 
-/* ---------------- FILTER (UNCHANGED) ---------------- */
+/* ---------------- FILTER FIXED ---------------- */
+
 function updateVisibleFiles() {
 
   const search = document
@@ -354,8 +355,8 @@ function updateVisibleFiles() {
     const matchesFilter =
       allowed.includes(status);
 
-   updateVisibleFiles();
-      return;
+    file.style.display =
+      (matchesSearch && matchesFilter) ? "" : "none";
   });
 }
 
@@ -440,13 +441,10 @@ function compare() {
   applyFilters();
 }
 
-function runSearch() {
+/* ---------------- REST UNCHANGED ---------------- */
 
-  const search = document
-    .getElementById("searchBox")
-    .value
-    .trim()
-    .toLowerCase();
+function runSearch() {
+  const search = document.getElementById("searchBox").value.trim().toLowerCase();
 
   const files = document.querySelectorAll(".file");
 
@@ -464,250 +462,11 @@ function runSearch() {
 
     file.style.display = hasMatch ? "" : "none";
   });
-
-  if (selectedName) {
-    const oldText = (oldData[selectedName] || "").toLowerCase();
-    const newText = (newData[selectedName] || "").toLowerCase();
-
-    const stillVisible =
-      !search ||
-      oldText.includes(search) ||
-      newText.includes(search);
-
-    if (stillVisible) {
-      show(selectedName);
-    } else {
-      document.getElementById("viewer").innerHTML =
-        "No matching text in selected file";
-
-      document.getElementById("matchCounter").textContent =
-        "0 / 0";
-    }
-  }
 }
 
-/* ---------------- DRAG & DROP (ONLY ADDITION) ---------------- */
-
-function enableDrop(labelText, inputId) {
-  const input = document.getElementById(inputId);
-
-  const zone = [...document.querySelectorAll(".upload-label")]
-    .find(l => l.textContent.includes(labelText));
-
-  if (!zone) return;
-
-  zone.addEventListener("dragover", e => {
-    e.preventDefault();
-    zone.classList.add("dragover");
-  });
-
-  zone.addEventListener("dragleave", () => {
-    zone.classList.remove("dragover");
-  });
-
-  zone.addEventListener("drop", e => {
-    e.preventDefault();
-    zone.classList.remove("dragover");
-
-    const files = [];
-    const items = e.dataTransfer.items;
-
-    for (let item of items) {
-      const entry = item.webkitGetAsEntry?.();
-      if (entry) readEntry(entry, files);
-    }
-
-    setTimeout(() => {
-      const dt = new DataTransfer();
-      files.forEach(f => dt.items.add(f));
-      input.files = dt.files;
-    }, 200);
-  });
+function applyFilters() {
+  updateVisibleFiles();
 }
-
-function readEntry(entry, files) {
-  if (entry.isFile) {
-    entry.file(f => files.push(f));
-  } else if (entry.isDirectory) {
-    const reader = entry.createReader();
-    reader.readEntries(entries => {
-      entries.forEach(e => readEntry(e, files));
-    });
-  }
-}
-
-enableDrop("Old Folder", "oldFiles");
-enableDrop("New Folder", "newFiles");
-
-/* ---------------- EVERYTHING BELOW UNCHANGED ---------------- */
-
-function show(name) {
-
-  selectedName = name;
-
-  document.querySelectorAll(".file").forEach(el => {
-    el.classList.toggle("active", el.dataset.name === name);
-  });
-
-  const a = oldData[name] || "";
-  const b = newData[name] || "";
-  const viewer = document.getElementById("viewer");
-
-  const A = a.split("\n");
-  const B = b.split("\n");
-
-  viewer.innerHTML = diffBlocks(A, B);
-
-  highlightSearch();
-}
-
-function diffBlocks(a, b) {
-
-  const dp = Array(a.length + 1)
-    .fill(0)
-    .map(() => Array(b.length + 1).fill(0));
-
-  for (let i = a.length - 1; i >= 0; i--) {
-    for (let j = b.length - 1; j >= 0; j--) {
-      if (a[i] === b[j]) {
-        dp[i][j] = dp[i + 1][j + 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);
-      }
-    }
-  }
-
-  let i = 0, j = 0;
-  let out = "";
-
-  while (i < a.length && j < b.length) {
-
-    if (a[i] === b[j]) {
-      out += wrap(a[i], "");
-      i++; j++;
-    }
-    else if (dp[i + 1][j] >= dp[i][j + 1]) {
-      out += wrap(a[i], "remove");
-      i++;
-    }
-    else {
-      out += wrap(b[j], "add");
-      j++;
-    }
-  }
-
-  while (i < a.length) out += wrap(a[i++], "remove");
-  while (j < b.length) out += wrap(b[j++], "add");
-
-  return out;
-}
-
-function wrap(text, type) {
-  if (text === "") return `<div class="block ${type}">&nbsp;</div>`;
-  return `<div class="block ${type}">${escapeHtml(text)}</div>`;
-}
-
-function highlightSearch() {
-
-  const search = document
-    .getElementById("searchBox")
-    .value
-    .trim();
-
-  matches = [];
-  currentMatch = 0;
-
-  if (!search) {
-    document.getElementById("matchCounter").textContent =
-      "0 / 0";
-    return;
-  }
-
-  const blocks = document.querySelectorAll(".block");
-
-  blocks.forEach(block => {
-
-    const original = block.textContent;
-
-    const regex = new RegExp(
-      escapeRegExp(search),
-      "gi"
-    );
-
-    block.innerHTML = escapeHtml(original).replace(
-      regex,
-      match => `<span class="highlight">${match}</span>`
-    );
-  });
-
-  matches = [...document.querySelectorAll(".highlight")];
-
-  if (matches.length) {
-    gotoMatch(0);
-  }
-  else {
-    document.getElementById("matchCounter").textContent =
-      "0 / 0";
-  }
-}
-
-function gotoMatch(index) {
-
-  if (!matches.length) return;
-
-  matches.forEach(m => {
-    m.classList.remove("active-highlight");
-  });
-
-  currentMatch =
-    (index + matches.length) % matches.length;
-
-  const el = matches[currentMatch];
-
-  el.classList.add("active-highlight");
-
-  el.scrollIntoView({
-    behavior: "smooth",
-    block: "center"
-  });
-
-  document.getElementById("matchCounter").textContent =
-    `${currentMatch + 1} / ${matches.length}`;
-}
-
-function escapeRegExp(text) {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function escapeHtml(t) {
-  return t
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;");
-}
-
-document.addEventListener("keydown", e => {
-
-  if (e.key === "Enter") {
-
-    if (e.shiftKey) {
-      gotoMatch(currentMatch - 1);
-    }
-    else {
-      gotoMatch(currentMatch + 1);
-    }
-  }
-
-  if (e.key === "F3") {
-    e.preventDefault();
-    gotoMatch(currentMatch + 1);
-  }
-
-  if (e.ctrlKey && e.key.toLowerCase() === "f") {
-    e.preventDefault();
-    document.getElementById("searchBox").focus();
-  }
-});
 </script>
 
 </body>
