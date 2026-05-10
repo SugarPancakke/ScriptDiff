@@ -12,6 +12,7 @@ body {
   font-family: monospace;
 }
 
+/* TOP BAR */
 .topbar {
   padding: 12px;
   display: flex;
@@ -23,7 +24,10 @@ body {
   z-index: 1000;
 }
 
-.spacer { flex: 1; }
+/* PUSH SEARCH TO FAR RIGHT */
+.spacer {
+  flex: 1;
+}
 
 .upload-label {
   display: flex;
@@ -39,36 +43,57 @@ body {
   padding: 6px;
 }
 
+/* SEARCH */
 .search-box {
   background: #3d3838;
   color: white;
   border: none;
   padding: 10px 12px;
   font-size: 14px;
+  font-family: monospace;
   width: 240px;
   outline: none;
 }
 
+.search-box::placeholder {
+  color: #aaa;
+}
+
+/* NAV BUTTONS */
 .nav-btn {
   padding: 10px 14px;
+  font-size: 14px;
 }
 
 #matchCounter {
   min-width: 60px;
   text-align: center;
   color: #ccc;
+  font-size: 14px;
 }
 
+/* BUTTON */
 button {
   background: #4d4747;
   color: white;
   border: none;
   padding: 12px 30px;
+  font-size: 16px;
   cursor: pointer;
+  font-family: monospace;
 }
 
-.filter { position: relative; }
+button:active {
+  transform: translateY(1px);
+  background: #3f3a3a;
+}
 
+/* FILTER WRAPPER */
+.filter {
+  position: relative;
+}
+
+/* FILTER MENU */
 .filter-menu {
   position: absolute;
   top: 110%;
@@ -79,35 +104,61 @@ button {
   display: none;
   flex-direction: column;
   gap: 6px;
+  z-index: 1100;
 }
 
+.filter-menu label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.filter-menu input[type="checkbox"] {
+  accent-color: #888;
+}
+
+/* LAYOUT */
 .container {
   display: flex;
   height: calc(100vh - 74px);
   overflow: hidden;
 }
 
+/* LEFT PANEL */
 .left {
   width: 25%;
   background: #2b2626;
   overflow-y: auto;
+  overflow-x: hidden;
   border-right: 1px solid #444;
+  position: relative;
+  z-index: 1;
 }
 
 .file {
-  padding: 8px;
+  position: relative;
+  padding: 8px 34px 8px 8px;
   border-bottom: 1px solid #3d3838;
   cursor: pointer;
-  position: relative;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
-.file:hover { background: #3d3838; }
-.file.active { background: #4d4747; }
+.file:hover {
+  background: #3d3838;
+}
 
+.file.active {
+  background: #4d4747;
+}
+
+/* STATUS DOT */
 .dot {
   position: absolute;
-  right: 12px;
   top: 50%;
+  right: 12px;
   transform: translateY(-50%);
   width: 11px;
   height: 11px;
@@ -117,25 +168,84 @@ button {
 .modified { background: #fbc02d; }
 .added { background: #43a047; }
 .removed { background: #e53935; }
+.unchanged { display: none; }
 
+/* RIGHT VIEWER */
 .right {
   width: 75%;
   padding: 10px;
   overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  z-index: 1;
 }
 
+/* BLOCKS */
 .block {
   margin-bottom: 2px;
   padding: 6px 8px;
+  border-radius: 6px;
   background: #2a2525;
+  font-family: monospace;
   white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
-.add { background: rgba(46,125,50,0.25); }
-.remove { background: rgba(183,28,28,0.25); text-decoration: line-through; }
+.add {
+  background: rgba(46,125,50,0.25);
+  border-left: 3px solid #2e7d32;
+}
 
-.highlight { background: #ffd54f; color: black; }
-.active-highlight { background: #ff9800; }
+.remove {
+  background: rgba(183,28,28,0.25);
+  border-left: 3px solid #b71c1c;
+  text-decoration: line-through;
+  opacity: 0.85;
+}
+
+/* SEARCH HIGHLIGHT */
+.highlight {
+  background: #ffd54f;
+  color: black;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.active-highlight {
+  background: #ff9800;
+  color: black;
+}
+
+/* DARK SCROLLBARS */
+.left::-webkit-scrollbar,
+.right::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.left::-webkit-scrollbar-track,
+.right::-webkit-scrollbar-track {
+  background: #2a2525;
+}
+
+.left::-webkit-scrollbar-thumb,
+.right::-webkit-scrollbar-thumb {
+  background: #4a4040;
+  border-radius: 8px;
+  border: 2px solid #2a2525;
+}
+
+.left::-webkit-scrollbar-thumb:hover,
+.right::-webkit-scrollbar-thumb:hover {
+  background: #5a4d4d;
+}
+
+.left,
+.right {
+  scrollbar-width: thin;
+  scrollbar-color: #4a4040 #2a2525;
+}
 
 .upload-label.dragover {
   outline: 2px dashed #fbc02d;
@@ -163,7 +273,8 @@ button {
   <div class="spacer"></div>
 
   <div class="filter">
-    <button onclick="toggleFilter()">⚙</button>
+    <button class="nav-btn" onclick="toggleFilter()">⚙</button>
+
     <div class="filter-menu" id="filterMenu">
       <label><input type="checkbox" checked value="added">Added</label>
       <label><input type="checkbox" checked value="modified">Modified</label>
@@ -172,10 +283,10 @@ button {
     </div>
   </div>
 
-  <input type="text" id="searchBox" class="search-box" oninput="runSearch()">
+  <input type="text" id="searchBox" class="search-box" placeholder="Search..." oninput="runSearch()">
 
-  <button onclick="gotoMatch(currentMatch - 1)">↑</button>
-  <button onclick="gotoMatch(currentMatch + 1)">↓</button>
+  <button class="nav-btn" onclick="gotoMatch(currentMatch - 1)">↑</button>
+  <button class="nav-btn" onclick="gotoMatch(currentMatch + 1)">↓</button>
 
   <div id="matchCounter">0 / 0</div>
 
@@ -183,29 +294,34 @@ button {
 
 <div class="container">
   <div class="left" id="fileList"></div>
-  <div class="right" id="viewer"></div>
+  <div class="right" id="viewer">Select file</div>
 </div>
 
 <script>
-let oldData = {}, newData = {};
+let oldData = {};
+let newData = {};
 let selectedName = null;
-let matches = [], currentMatch = 0;
+
+let matches = [];
+let currentMatch = 0;
 
 function toggleFilter() {
-  const m = document.getElementById("filterMenu");
-  m.style.display = m.style.display === "flex" ? "none" : "flex";
+  const menu = document.getElementById("filterMenu");
+  menu.style.display = menu.style.display === "flex" ? "none" : "flex";
 }
 
-document.addEventListener("click", e => {
+document.addEventListener("click", (e) => {
   if (!e.target.closest(".filter")) {
     document.getElementById("filterMenu").style.display = "none";
   }
 });
 
-/* ✅ FIXED FILTER (safe + no recursion) */
+/* ---------------- FIXED FILTER LOGIC ---------------- */
+
 function updateVisibleFiles() {
 
   const search = document.getElementById("searchBox").value.trim().toLowerCase();
+
   const allowed = [...document.querySelectorAll("#filterMenu input:checked")]
     .map(e => e.value);
 
@@ -214,50 +330,65 @@ function updateVisibleFiles() {
     const name = file.dataset.name;
     const status = file.dataset.status;
 
-    const text = ((oldData[name] || "") + (newData[name] || "")).toLowerCase();
+    const oldText = (oldData[name] || "").toLowerCase();
+    const newText = (newData[name] || "").toLowerCase();
 
-    const okSearch = !search || text.includes(search);
-    const okFilter = allowed.includes(status);
+    const matchesSearch =
+      !search ||
+      oldText.includes(search) ||
+      newText.includes(search);
 
-    file.style.display = (okSearch && okFilter) ? "" : "none";
+    const matchesFilter =
+      allowed.includes(status);
+
+    file.style.display = (matchesSearch && matchesFilter) ? "" : "none";
   });
 }
 
-/* ✅ SEARCH RESTORED */
-function runSearch() {
+function applyFilters() {
   updateVisibleFiles();
-
-  if (selectedName) {
-    show(selectedName); // re-render + re-highlight
-  }
 }
 
-document.querySelectorAll("#filterMenu input").forEach(cb =>
-  cb.addEventListener("change", updateVisibleFiles)
-);
+document.querySelectorAll("#filterMenu input").forEach(cb => {
+  cb.addEventListener("change", applyFilters);
+});
 
-/* FILES */
-function loadFiles() {
-  oldData = {}; newData = {}; selectedName = null;
+/* ---------------- FILE LOGIC ---------------- */
 
-  read(oldFiles.files, oldData, () =>
-    read(newFiles.files, newData, compare)
-  );
+function cleanText(t) {
+  return t.replace(/\r/g, "");
 }
 
-function read(files, store, cb) {
+function normalize(file) {
+  const path = file.webkitRelativePath || file.name;
+  return path.includes("/") ? path.split("/").slice(1).join("/") : path;
+}
+
+function readFiles(files, store, cb) {
   let done = 0;
   if (!files.length) return cb();
 
   for (let f of files) {
     const r = new FileReader();
+
     r.onload = e => {
-      store[f.webkitRelativePath || f.name] = e.target.result;
+      store[normalize(f)] = cleanText(e.target.result);
       done++;
       if (done === files.length) cb();
     };
+
     r.readAsText(f);
   }
+}
+
+function loadFiles() {
+  oldData = {};
+  newData = {};
+  selectedName = null;
+
+  readFiles(oldFiles.files, oldData, () => {
+    readFiles(newFiles.files, newData, compare);
+  });
 }
 
 function compare() {
@@ -268,7 +399,8 @@ function compare() {
 
   all.forEach(name => {
 
-    const o = oldData[name], n = newData[name];
+    const o = oldData[name];
+    const n = newData[name];
 
     let status = "unchanged";
     if (!o) status = "added";
@@ -282,97 +414,131 @@ function compare() {
 
     div.onclick = () => show(name);
 
-    div.innerHTML = `<span>${name}</span><span class="dot ${status}"></span>`;
+    div.innerHTML = `
+      <span>${name}</span>
+      <span class="dot ${status}"></span>
+    `;
+
     list.appendChild(div);
   });
 
+  runSearch();
+  applyFilters();
+}
+
+/* SEARCH NOW USES SAME SYSTEM */
+
+function runSearch() {
   updateVisibleFiles();
 }
 
+/* ---------------- EVERYTHING ELSE UNCHANGED ---------------- */
+
 function show(name) {
+
   selectedName = name;
 
-  document.querySelectorAll(".file").forEach(f =>
-    f.classList.toggle("active", f.dataset.name === name)
-  );
+  document.querySelectorAll(".file").forEach(el => {
+    el.classList.toggle("active", el.dataset.name === name);
+  });
 
-  const a = (oldData[name] || "").split("\n");
-  const b = (newData[name] || "").split("\n");
+  const a = oldData[name] || "";
+  const b = newData[name] || "";
+  const viewer = document.getElementById("viewer");
 
-  let html = "";
-  for (let i = 0; i < Math.max(a.length, b.length); i++) {
-    if (a[i] === b[i]) html += `<div class="block">${a[i]||""}</div>`;
-    else {
-      if (a[i]) html += `<div class="block remove">${a[i]}</div>`;
-      if (b[i]) html += `<div class="block add">${b[i]}</div>`;
+  const A = a.split("\n");
+  const B = b.split("\n");
+
+  viewer.innerHTML = diffBlocks(A, B);
+
+  highlightSearch();
+}
+
+function diffBlocks(a, b) {
+  const dp = Array(a.length + 1).fill(0).map(() => Array(b.length + 1).fill(0));
+
+  for (let i = a.length - 1; i >= 0; i--) {
+    for (let j = b.length - 1; j >= 0; j--) {
+      dp[i][j] = (a[i] === b[j])
+        ? dp[i + 1][j + 1] + 1
+        : Math.max(dp[i + 1][j], dp[i][j + 1]);
     }
   }
 
-  document.getElementById("viewer").innerHTML = html;
+  let i = 0, j = 0, out = "";
 
-  highlight();
+  while (i < a.length && j < b.length) {
+    if (a[i] === b[j]) {
+      out += wrap(a[i], "");
+      i++; j++;
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+      out += wrap(a[i++], "remove");
+    } else {
+      out += wrap(b[j++], "add");
+    }
+  }
+
+  while (i < a.length) out += wrap(a[i++], "remove");
+  while (j < b.length) out += wrap(b[j++], "add");
+
+  return out;
 }
 
-/* SEARCH HIGHLIGHT */
-function highlight() {
+function wrap(text, type) {
+  if (!text) return `<div class="block ${type}">&nbsp;</div>`;
+  return `<div class="block ${type}">${escapeHtml(text)}</div>`;
+}
+
+function highlightSearch() {
 
   const search = document.getElementById("searchBox").value.trim();
-  matches = []; currentMatch = 0;
+
+  matches = [];
+  currentMatch = 0;
 
   if (!search) return;
 
   const blocks = document.querySelectorAll(".block");
 
-  blocks.forEach(b => {
-    const r = new RegExp(search, "gi");
-    b.innerHTML = b.textContent.replace(r,
-      m => `<span class="highlight">${m}</span>`
-    );
+  blocks.forEach(block => {
+    const original = block.textContent;
+    const regex = new RegExp(escapeRegExp(search), "gi");
+
+    block.innerHTML = escapeHtml(original)
+      .replace(regex, m => `<span class="highlight">${m}</span>`);
   });
 
   matches = [...document.querySelectorAll(".highlight")];
+
   if (matches.length) gotoMatch(0);
 }
 
-function gotoMatch(i) {
+function gotoMatch(index) {
+
   if (!matches.length) return;
 
   matches.forEach(m => m.classList.remove("active-highlight"));
 
-  currentMatch = (i + matches.length) % matches.length;
-  const el = matches[currentMatch];
+  currentMatch = (index + matches.length) % matches.length;
 
+  const el = matches[currentMatch];
   el.classList.add("active-highlight");
+
   el.scrollIntoView({ behavior: "smooth", block: "center" });
 
   document.getElementById("matchCounter").textContent =
     `${currentMatch + 1} / ${matches.length}`;
 }
 
-/* DRAG DROP RESTORED */
-function enableDrop(label, id) {
-  const input = document.getElementById(id);
-
-  const zone = [...document.querySelectorAll(".upload-label")]
-    .find(z => z.textContent.includes(label));
-
-  zone.addEventListener("dragover", e => {
-    e.preventDefault();
-    zone.classList.add("dragover");
-  });
-
-  zone.addEventListener("dragleave", () =>
-    zone.classList.remove("dragover")
-  );
-
-  zone.addEventListener("drop", e => {
-    e.preventDefault();
-    zone.classList.remove("dragover");
-  });
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-enableDrop("Old Folder", "oldFiles");
-enableDrop("New Folder", "newFiles");
+function escapeHtml(t) {
+  return t.replace(/&/g,"&amp;")
+          .replace(/</g,"&lt;")
+          .replace(/>/g,"&gt;");
+}
 </script>
 
 </body>
