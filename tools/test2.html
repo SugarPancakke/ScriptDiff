@@ -21,6 +21,7 @@ body {
   background: #2a2525;
   position: sticky;
   top: 0;
+  z-index: 1000;
 }
 
 /* PUSH SEARCH TO FAR RIGHT */
@@ -90,7 +91,6 @@ button:active {
 /* FILTER WRAPPER */
 .filter {
   position: relative;
-  z-index: 10000;
 }
 
 /* FILTER MENU */
@@ -104,7 +104,7 @@ button:active {
   display: none;
   flex-direction: column;
   gap: 6px;
-  z-index: 9999;
+  z-index: 1100;
 }
 
 .filter-menu label {
@@ -133,6 +133,8 @@ button:active {
   overflow-y: auto;
   overflow-x: hidden;
   border-right: 1px solid #444;
+  position: relative;
+  z-index: 1;
 }
 
 .file {
@@ -174,6 +176,8 @@ button:active {
   padding: 10px;
   overflow-y: auto;
   overflow-x: hidden;
+  position: relative;
+  z-index: 1;
 }
 
 /* BLOCKS */
