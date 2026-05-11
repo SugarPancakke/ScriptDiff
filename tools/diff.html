@@ -301,19 +301,32 @@ function diffBlocks(a, b) {
 /* FILE VIEW */
 function show(name) {
 
-  const a = oldData[name] || "";
-  const b = newData[name] || "";
+  selectedName = name;
+
+  document.querySelectorAll(".file").forEach(el => {
+    el.classList.toggle("active", el.dataset.name === name);
+  });
+
+  const aRaw = oldData[name] || "";
+  const bRaw = newData[name] || "";
   const viewer = document.getElementById("viewer");
 
-  const A = a.split("\n");
-  const B = b.split("\n");
+  const aLines = aRaw.split("\n");
+  const bLines = bRaw.split("\n");
 
-  if (A.length > MAX_LINES || B.length > MAX_LINES) {
-    viewer.innerHTML = `<div class="block remove">File too large</div>`;
+  // IMPORTANT: we still ALLOW comparison, only block rendering
+  const tooLarge =
+    aLines.length > MAX_SAFE_LINES ||
+    bLines.length > MAX_SAFE_LINES;
+
+  if (tooLarge) {
+    viewer.innerHTML = `<div class="block">File too large</div>`;
     return;
   }
 
-  viewer.innerHTML = diffBlocks(A, B);
+  viewer.innerHTML = diffBlocks(aLines, bLines);
+
+  highlightSearch();
 }
 
 /* SEARCH */
