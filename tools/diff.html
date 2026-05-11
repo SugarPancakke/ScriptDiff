@@ -455,33 +455,77 @@ function show(name) {
 }
 
 function diffBlocks(a, b) {
-  const dp = Array(a.length + 1).fill(0).map(() => Array(b.length + 1).fill(0));
 
-  for (let i = a.length - 1; i >= 0; i--) {
-    for (let j = b.length - 1; j >= 0; j--) {
-      dp[i][j] = (a[i] === b[j])
-        ? dp[i + 1][j + 1] + 1
-        : Math.max(dp[i + 1][j], dp[i][j + 1]);
-    }
-  }
+  const out = [];
 
-  let i = 0, j = 0, out = "";
+  let i = 0;
+  let j = 0;
 
   while (i < a.length && j < b.length) {
+
     if (a[i] === b[j]) {
-      out += wrap(a[i], "");
-      i++; j++;
-    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
-      out += wrap(a[i++], "remove");
-    } else {
-      out += wrap(b[j++], "add");
+      out.push(wrap(a[i], ""));
+      i++;
+      j++;
+      continue;
     }
+
+    let foundInB = -1;
+
+    for (let k = j + 1; k < Math.min(j + 40, b.length); k++) {
+      if (a[i] === b[k]) {
+        foundInB = k;
+        break;
+      }
+    }
+
+    if (foundInB !== -1) {
+
+      while (j < foundInB) {
+        out.push(wrap(b[j], "add"));
+        j++;
+      }
+
+      continue;
+    }
+
+    let foundInA = -1;
+
+    for (let k = i + 1; k < Math.min(i + 40, a.length); k++) {
+      if (a[k] === b[j]) {
+        foundInA = k;
+        break;
+      }
+    }
+
+    if (foundInA !== -1) {
+
+      while (i < foundInA) {
+        out.push(wrap(a[i], "remove"));
+        i++;
+      }
+
+      continue;
+    }
+
+    out.push(wrap(a[i], "remove"));
+    out.push(wrap(b[j], "add"));
+
+    i++;
+    j++;
+  }
+  
+  while (i < a.length) {
+    out.push(wrap(a[i], "remove"));
+    i++;
   }
 
-  while (i < a.length) out += wrap(a[i++], "remove");
-  while (j < b.length) out += wrap(b[j++], "add");
+  while (j < b.length) {
+    out.push(wrap(b[j], "add"));
+    j++;
+  }
 
-  return out;
+  return out.join("");
 }
 
 function wrap(text, type) {
