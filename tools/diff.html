@@ -353,6 +353,11 @@ document.querySelectorAll("#filterMenu input").forEach(cb => {
   cb.addEventListener("change", applyFilters);
 });
 
+document.getElementById("showOnlyChanges")
+  .addEventListener("change", () => {
+    if (selectedName) show(selectedName);
+  });
+
 /* ---------------- FILE LOGIC ---------------- */
 
 function cleanText(t) {
@@ -484,6 +489,9 @@ function diffBlocksLarge(a, b) {
 /* ---------------- ORIGINAL DIFF ---------------- */
 
 function diffBlocks(a, b) {
+
+  const onlyChanges = document.getElementById("showOnlyChanges")?.checked;
+
   const dp = Array(a.length + 1).fill(0).map(() => Array(b.length + 1).fill(0));
 
   for (let i = a.length - 1; i >= 0; i--) {
@@ -497,9 +505,15 @@ function diffBlocks(a, b) {
   let i = 0, j = 0, out = "";
 
   while (i < a.length && j < b.length) {
+
     if (a[i] === b[j]) {
-      out += wrap(a[i], "");
+
+      if (!onlyChanges) {
+        out += wrap(a[i], "");
+      }
+
       i++; j++;
+
     } else if (dp[i + 1][j] >= dp[i][j + 1]) {
       out += wrap(a[i++], "remove");
     } else {
@@ -512,7 +526,6 @@ function diffBlocks(a, b) {
 
   return out;
 }
-
 function wrap(text, type) {
   if (!text) return `<div class="block ${type}">&nbsp;</div>`;
   return `<div class="block ${type}">${escapeHtml(text)}</div>`;
