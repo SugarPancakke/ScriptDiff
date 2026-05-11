@@ -267,6 +267,7 @@ function compare() {
     const div = document.createElement("div");
     div.className = "file";
     div.dataset.name = name;
+    div.dataset.status = status;
 
     div.onclick = () => show(name);
 
@@ -275,23 +276,30 @@ function compare() {
   });
 }
 
-/* SAFE DIFF (FIXED) */
+/* DIFF ENGINE (FIXED + STABLE) */
 function diffBlocks(a, b) {
-  let out = [];
 
+  let out = [];
   let i = 0, j = 0;
 
   while (i < a.length || j < b.length) {
 
     if (a[i] === b[j]) {
-      if (a[i] !== undefined)
+      if (a[i] !== undefined) {
         out.push(`<div class="block">${escapeHtml(a[i])}</div>`);
+      }
       i++; j++;
-    } else {
-      if (a[i] !== undefined)
-        out.push(`<div class="block remove">${escapeHtml(a[i++])}</div>`);
-      if (b[j] !== undefined)
-        out.push(`<div class="block add">${escapeHtml(b[j++])}</div>`);
+      continue;
+    }
+
+    if (i < a.length) {
+      out.push(`<div class="block remove">${escapeHtml(a[i])}</div>`);
+      i++;
+    }
+
+    if (j < b.length) {
+      out.push(`<div class="block add">${escapeHtml(b[j])}</div>`);
+      j++;
     }
   }
 
@@ -300,8 +308,6 @@ function diffBlocks(a, b) {
 
 /* FILE VIEW */
 function show(name) {
-
-  selectedName = name;
 
   document.querySelectorAll(".file").forEach(el => {
     el.classList.toggle("active", el.dataset.name === name);
@@ -314,11 +320,9 @@ function show(name) {
   const A = aRaw.split("\n");
   const B = bRaw.split("\n");
 
-  const tooLarge =
-    A.length > MAX_SAFE_LINES ||
-    B.length > MAX_SAFE_LINES;
+  const tooLarge = A.length > MAX_LINES || B.length > MAX_LINES;
 
-  let diff = diffBlocks(A, B);
+  const diff = diffBlocks(A, B);
 
   if (tooLarge) {
 
@@ -337,22 +341,68 @@ function show(name) {
       `<div class="block remove">File too large</div>` +
       changedOnly;
 
-    return;
+  } else {
+    viewer.innerHTML = diff;
   }
 
-  viewer.innerHTML = diff;
   highlightSearch();
 }
 
-/* SEARCH */
-function runSearch() {}
+/* SEARCH (RESTORED FIXED VERSION) */
+function runSearch() {
 
-function gotoMatch() {}
+  const search = document.getElementById("searchBox").value.trim();
+  matches = [];
+  currentMatch = 0;
 
+  if (!search) return;
+
+  const regex = new RegExp(escapeRegExp(search), "gi");
+
+  const blocks = document.querySelectorAll(".block");
+
+  for (let block of blocks) {
+
+    const text = block.textContent;
+    if (!text || !text.toLowerCase().includes(search.toLowerCase())) continue;
+
+    block.innerHTML = escapeHtml(text).replace(
+      regex,
+      m => `<span class="highlight">${m}</span>`
+    );
+  }
+
+  matches = [...document.querySelectorAll(".highlight")];
+
+  if (matches.length) gotoMatch(0);
+}
+
+function gotoMatch(index) {
+
+  if (!matches.length) return;
+
+  matches.forEach(m => m.classList.remove("active-highlight"));
+
+  currentMatch = (index + matches.length) % matches.length;
+
+  const el = matches[currentMatch];
+  el.classList.add("active-highlight");
+
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  document.getElementById("matchCounter").textContent =
+    `${currentMatch + 1} / ${matches.length}`;
+}
+
+/* UTIL */
 function escapeHtml(t) {
   return t.replace(/&/g,"&amp;")
           .replace(/</g,"&lt;")
           .replace(/>/g,"&gt;");
+}
+
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 </script>
 
