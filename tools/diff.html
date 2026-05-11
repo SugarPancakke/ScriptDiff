@@ -311,21 +311,36 @@ function show(name) {
   const bRaw = newData[name] || "";
   const viewer = document.getElementById("viewer");
 
-  const aLines = aRaw.split("\n");
-  const bLines = bRaw.split("\n");
+  const A = aRaw.split("\n");
+  const B = bRaw.split("\n");
 
-  // IMPORTANT: we still ALLOW comparison, only block rendering
   const tooLarge =
-    aLines.length > MAX_SAFE_LINES ||
-    bLines.length > MAX_SAFE_LINES;
+    A.length > MAX_SAFE_LINES ||
+    B.length > MAX_SAFE_LINES;
+
+  let diff = diffBlocks(A, B);
 
   if (tooLarge) {
-    viewer.innerHTML = `<div class="block">File too large</div>`;
+
+    const temp = document.createElement("div");
+    temp.innerHTML = diff;
+
+    const changedOnly = [...temp.children]
+      .filter(el =>
+        el.classList.contains("add") ||
+        el.classList.contains("remove")
+      )
+      .map(el => el.outerHTML)
+      .join("");
+
+    viewer.innerHTML =
+      `<div class="block remove">File too large</div>` +
+      changedOnly;
+
     return;
   }
 
-  viewer.innerHTML = diffBlocks(aLines, bLines);
-
+  viewer.innerHTML = diff;
   highlightSearch();
 }
 
