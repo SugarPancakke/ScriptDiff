@@ -459,95 +459,88 @@ function diffBlocks(a, b) {
   let i = 0;
   let j = 0;
 
-  function countSame(i0, j0) {
-    let n = 0;
-    while (
-      i0 + n < a.length &&
-      j0 + n < b.length &&
-      a[i0 + n] === b[j0 + n]
-    ) n++;
-    return n;
+  function flush(buffer, type) {
+    if (!buffer.length) return;
+
+    out.push(
+      `<div class="block ${type}">${buffer.map(escapeHtml).join("<br>")}</div>`
+    );
+
+    buffer.length = 0;
+  }
+
+  const buf = {
+    "": [],
+    "add": [],
+    "remove": []
+  };
+
+  let currentType = "";
+
+  function push(type, text) {
+
+    if (type !== currentType) {
+      flush(buf[currentType], currentType);
+      currentType = type;
+    }
+
+    buf[type].push(text);
   }
 
   while (i < a.length && j < b.length) {
 
     if (a[i] === b[j]) {
-
-      let start = i;
-      let count = 0;
-
-      while (i < a.length && j < b.length && a[i] === b[j]) {
-        i++;
-        j++;
-        count++;
-      }
-
-      if (count === 1) {
-        out.push(wrap(a[start], ""));
-      } else {
-        out.push(wrap(`↕ ${count} unchanged lines`, ""));
-      }
-
+      push("", a[i]);
+      i++; j++;
       continue;
     }
 
-    let startJ = j;
-    let insertCount = 0;
-
-    while (
-      j < b.length &&
-      (i >= a.length || !a.slice(i, i + 5).includes(b[j]))
-    ) {
-      out.push(wrap(b[j], "add"));
-      j++;
-      insertCount++;
-
-      if (insertCount > 50) {
-        out.push(wrap(`+ ${insertCount}+ added lines`, "add"));
+    let foundInB = -1;
+    for (let k = j + 1; k < Math.min(j + 40, b.length); k++) {
+      if (a[i] === b[k]) {
+        foundInB = k;
         break;
       }
     }
 
-    if (insertCount > 50) continue;
+    if (foundInB !== -1) {
+      while (j < foundInB) {
+        push("add", b[j]);
+        j++;
+      }
+      continue;
+    }
 
-    let startI = i;
-    let removeCount = 0;
-
-    while (
-      i < a.length &&
-      (j >= b.length || !b.slice(j, j + 5).includes(a[i]))
-    ) {
-      out.push(wrap(a[i], "remove"));
-      i++;
-      removeCount++;
-
-      if (removeCount > 50) {
-        out.push(wrap(`- ${removeCount}+ removed lines`, "remove"));
+    let foundInA = -1;
+    for (let k = i + 1; k < Math.min(i + 40, a.length); k++) {
+      if (a[k] === b[j]) {
+        foundInA = k;
         break;
       }
     }
 
-    if (removeCount > 50) continue;
-
-    if (i < a.length && j < b.length) {
-      out.push(wrap(a[i], "remove"));
-      out.push(wrap(b[j], "add"));
-      i++;
-      j++;
+    if (foundInA !== -1) {
+      while (i < foundInA) {
+        push("remove", a[i]);
+        i++;
+      }
+      continue;
     }
+
+    push("remove", a[i]);
+    push("add", b[j]);
+
+    i++;
+    j++;
   }
 
-  if (i < a.length) {
-    out.push(wrap(`- ${a.length - i} removed lines`, "remove"));
-  }
+  while (i < a.length) push("remove", a[i++]);
+  while (j < b.length) push("add", b[j++]);
 
-  if (j < b.length) {
-    out.push(wrap(`+ ${b.length - j} added lines`, "add"));
-  }
+  flush(buf[currentType], currentType);
 
   return out.join("");
 }
-
 function wrap(text, type) {
   if (!text) return `<div class="block ${type}">&nbsp;</div>`;
   return `<div class="block ${type}">${escapeHtml(text)}</div>`;
