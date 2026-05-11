@@ -459,32 +459,27 @@ function diffBlocks(a, b) {
   let i = 0;
   let j = 0;
 
-  function flush(buffer, type) {
+  let currentType = null;
+  let buffer = [];
+
+  function flush() {
     if (!buffer.length) return;
-
     out.push(
-      `<div class="block ${type}">${buffer.map(escapeHtml).join("<br>")}</div>`
+      `<div class="block ${currentType || ""}">` +
+      buffer.map(escapeHtml).join("<br>") +
+      `</div>`
     );
-
-    buffer.length = 0;
+    buffer = [];
   }
-
-  const buf = {
-    "": [],
-    "add": [],
-    "remove": []
-  };
-
-  let currentType = "";
 
   function push(type, text) {
 
     if (type !== currentType) {
-      flush(buf[currentType], currentType);
+      flush();
       currentType = type;
     }
 
-    buf[type].push(text);
+    buffer.push(text);
   }
 
   while (i < a.length && j < b.length) {
@@ -537,10 +532,11 @@ function diffBlocks(a, b) {
   while (i < a.length) push("remove", a[i++]);
   while (j < b.length) push("add", b[j++]);
 
-  flush(buf[currentType], currentType);
+  flush();
 
   return out.join("");
 }
+  
 function wrap(text, type) {
   if (!text) return `<div class="block ${type}">&nbsp;</div>`;
   return `<div class="block ${type}">${escapeHtml(text)}</div>`;
@@ -555,15 +551,21 @@ function highlightSearch() {
 
   if (!search) return;
 
+  const regex = new RegExp(escapeRegExp(search), "gi");
+
   const blocks = document.querySelectorAll(".block");
 
-  blocks.forEach(block => {
-    const original = block.textContent;
-    const regex = new RegExp(escapeRegExp(search), "gi");
+  for (let block of blocks) {
 
-    block.innerHTML = escapeHtml(original)
-      .replace(regex, m => `<span class="highlight">${m}</span>`);
-  });
+    const text = block.textContent;
+
+    if (!text || !text.includes(search)) continue;
+
+    block.innerHTML = escapeHtml(text).replace(
+      regex,
+      m => `<span class="highlight">${m}</span>`
+    );
+  }
 
   matches = [...document.querySelectorAll(".highlight")];
 
