@@ -176,8 +176,6 @@ button:active {
   padding: 10px;
   overflow-y: auto;
   overflow-x: hidden;
-  position: relative;
-  z-index: 1;
 }
 
 /* BLOCKS */
@@ -186,7 +184,6 @@ button:active {
   padding: 6px 8px;
   border-radius: 6px;
   background: #2a2525;
-  font-family: monospace;
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: anywhere;
@@ -217,7 +214,7 @@ button:active {
   color: black;
 }
 
-/* DARK SCROLLBARS */
+/* SCROLLBARS */
 .left::-webkit-scrollbar,
 .right::-webkit-scrollbar {
   width: 10px;
@@ -245,11 +242,6 @@ button:active {
 .right {
   scrollbar-width: thin;
   scrollbar-color: #4a4040 #2a2525;
-}
-
-.upload-label.dragover {
-  outline: 2px dashed #fbc02d;
-  outline-offset: 4px;
 }
 </style>
 </head>
@@ -306,7 +298,6 @@ let matches = [];
 let currentMatch = 0;
 
 const MAX_SAFE_LINES = 5000;
-const MAX_SAFE_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 function toggleFilter() {
   const menu = document.getElementById("filterMenu");
@@ -318,8 +309,6 @@ document.addEventListener("click", (e) => {
     document.getElementById("filterMenu").style.display = "none";
   }
 });
-
-/* ---------------- FIXED FILTER LOGIC ---------------- */
 
 function updateVisibleFiles() {
 
@@ -341,10 +330,7 @@ function updateVisibleFiles() {
       oldText.includes(search) ||
       newText.includes(search);
 
-    const matchesFilter =
-      allowed.includes(status);
-
-    file.style.display = (matchesSearch && matchesFilter) ? "" : "none";
+    file.style.display = (matchesSearch && allowed.includes(status)) ? "" : "none";
   });
 }
 
@@ -355,8 +341,6 @@ function applyFilters() {
 document.querySelectorAll("#filterMenu input").forEach(cb => {
   cb.addEventListener("change", applyFilters);
 });
-
-/* ---------------- FILE LOGIC ---------------- */
 
 function cleanText(t) {
   return t.replace(/\r/g, "");
@@ -373,13 +357,11 @@ function readFiles(files, store, cb) {
 
   for (let f of files) {
     const r = new FileReader();
-
     r.onload = e => {
       store[normalize(f)] = cleanText(e.target.result);
       done++;
       if (done === files.length) cb();
     };
-
     r.readAsText(f);
   }
 }
@@ -417,10 +399,7 @@ function compare() {
 
     div.onclick = () => show(name);
 
-    div.innerHTML = `
-      <span>${name}</span>
-      <span class="dot ${status}"></span>
-    `;
+    div.innerHTML = `<span>${name}</span><span class="dot ${status}"></span>`;
 
     list.appendChild(div);
   });
@@ -429,11 +408,9 @@ function compare() {
   applyFilters();
 }
 
-
 function runSearch() {
   updateVisibleFiles();
 }
-
 
 function show(name) {
 
@@ -443,20 +420,12 @@ function show(name) {
     el.classList.toggle("active", el.dataset.name === name);
   });
 
-  const aRaw = oldData[name] || "";
-  const bRaw = newData[name] || "";
+  const a = oldData[name] || "";
+  const b = newData[name] || "";
   const viewer = document.getElementById("viewer");
 
-  if (
-    aRaw.length > MAX_SAFE_FILE_SIZE ||
-    bRaw.length > MAX_SAFE_FILE_SIZE
-  ) {
-    viewer.innerHTML = `<div class="block remove">File too large</div>`;
-    return;
-  }
-
-  const A = aRaw.split("\n");
-  const B = bRaw.split("\n");
+  const A = a.split("\n");
+  const B = b.split("\n");
 
   if (A.length > MAX_SAFE_LINES || B.length > MAX_SAFE_LINES) {
     viewer.innerHTML = `<div class="block remove">File too large</div>`;
@@ -464,76 +433,43 @@ function show(name) {
   }
 
   viewer.innerHTML = diffBlocks(A, B);
-
   highlightSearch();
 }
-  function push(type, text) {
 
-    type = type || "";
+/* FIXED DIFF */
+function diffBlocks(a, b) {
 
-    if (type !== currentType) {
-      flush();
-      currentType = type;
+  const dp = Array(a.length + 1)
+    .fill(0)
+    .map(() => Array(b.length + 1).fill(0));
+
+  for (let i = a.length - 1; i >= 0; i--) {
+    for (let j = b.length - 1; j >= 0; j--) {
+      dp[i][j] = (a[i] === b[j])
+        ? dp[i + 1][j + 1] + 1
+        : Math.max(dp[i + 1][j], dp[i][j + 1]);
     }
-
-    buffer.push(text);
   }
+
+  let i = 0, j = 0, out = "";
 
   while (i < a.length && j < b.length) {
-
     if (a[i] === b[j]) {
-      push("", a[i]);
+      out += wrap(a[i], "");
       i++; j++;
-      continue;
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+      out += wrap(a[i++], "remove");
+    } else {
+      out += wrap(b[j++], "add");
     }
-
-    let foundInB = -1;
-    for (let k = j + 1; k < Math.min(j + 40, b.length); k++) {
-      if (a[i] === b[k]) {
-        foundInB = k;
-        break;
-      }
-    }
-
-    if (foundInB !== -1) {
-      while (j < foundInB) {
-        push("add", b[j]);
-        j++;
-      }
-      continue;
-    }
-
-    let foundInA = -1;
-    for (let k = i + 1; k < Math.min(i + 40, a.length); k++) {
-      if (a[k] === b[j]) {
-        foundInA = k;
-        break;
-      }
-    }
-
-    if (foundInA !== -1) {
-      while (i < foundInA) {
-        push("remove", a[i]);
-        i++;
-      }
-      continue;
-    }
-
-    push("remove", a[i]);
-    push("add", b[j]);
-
-    i++;
-    j++;
   }
 
-  while (i < a.length) push("remove", a[i++]);
-  while (j < b.length) push("add", b[j++]);
+  while (i < a.length) out += wrap(a[i++], "remove");
+  while (j < b.length) out += wrap(b[j++], "add");
 
-  flush();
-
-  return out.join("");
+  return out;
 }
-  
+
 function wrap(text, type) {
   if (!text) return `<div class="block ${type}">&nbsp;</div>`;
   return `<div class="block ${type}">${escapeHtml(text)}</div>`;
@@ -553,10 +489,8 @@ function highlightSearch() {
   const blocks = document.querySelectorAll(".block");
 
   for (let block of blocks) {
-
     const text = block.textContent;
-
-    if (!text || !text.includes(search)) continue;
+    if (!text) continue;
 
     block.innerHTML = escapeHtml(text).replace(
       regex,
@@ -565,7 +499,6 @@ function highlightSearch() {
   }
 
   matches = [...document.querySelectorAll(".highlight")];
-
   if (matches.length) gotoMatch(0);
 }
 
