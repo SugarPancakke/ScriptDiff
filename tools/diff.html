@@ -305,6 +305,9 @@ let selectedName = null;
 let matches = [];
 let currentMatch = 0;
 
+const MAX_SAFE_LINES = 5000;
+const MAX_SAFE_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
 function toggleFilter() {
   const menu = document.getElementById("filterMenu");
   menu.style.display = menu.style.display === "flex" ? "none" : "flex";
@@ -440,44 +443,32 @@ function show(name) {
     el.classList.toggle("active", el.dataset.name === name);
   });
 
-  const a = oldData[name] || "";
-  const b = newData[name] || "";
+  const aRaw = oldData[name] || "";
+  const bRaw = newData[name] || "";
   const viewer = document.getElementById("viewer");
 
-  const A = a.split("\n");
-  const B = b.split("\n");
+  if (
+    aRaw.length > MAX_SAFE_FILE_SIZE ||
+    bRaw.length > MAX_SAFE_FILE_SIZE
+  ) {
+    viewer.innerHTML = `<div class="block remove">File too large</div>`;
+    return;
+  }
+
+  const A = aRaw.split("\n");
+  const B = bRaw.split("\n");
+
+  if (A.length > MAX_SAFE_LINES || B.length > MAX_SAFE_LINES) {
+    viewer.innerHTML = `<div class="block remove">File too large</div>`;
+    return;
+  }
 
   viewer.innerHTML = diffBlocks(A, B);
 
   highlightSearch();
 }
-
-function diffBlocks(a, b) {
-
-  const out = [];
-
-  let i = 0;
-  let j = 0;
-
-  let currentType = "";
-  let buffer = [];
-
-  function flush() {
-    if (!buffer.length) return;
-
-    out.push(
-      `<div class="block ${currentType}">` +
-      buffer.map(escapeHtml).join("<br>") +
-      `</div>`
-    );
-
-    buffer = [];
-  }
-
   function push(type, text) {
 
-    // IMPORTANT FIX:
-    // normalize undefined/null types
     type = type || "";
 
     if (type !== currentType) {
