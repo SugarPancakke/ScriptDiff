@@ -459,20 +459,26 @@ function diffBlocks(a, b) {
   let i = 0;
   let j = 0;
 
-  let currentType = null;
+  let currentType = "";
   let buffer = [];
 
   function flush() {
     if (!buffer.length) return;
+
     out.push(
-      `<div class="block ${currentType || ""}">` +
+      `<div class="block ${currentType}">` +
       buffer.map(escapeHtml).join("<br>") +
       `</div>`
     );
+
     buffer = [];
   }
 
   function push(type, text) {
+
+    // IMPORTANT FIX:
+    // normalize undefined/null types
+    type = type || "";
 
     if (type !== currentType) {
       flush();
