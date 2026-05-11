@@ -458,33 +458,25 @@ function show(name) {
   highlightSearch();
 }
 
-/* ---------------- NEW LARGE FILE DIFF (ADDED ONLY) ---------------- */
 
 function diffBlocksLarge(a, b) {
-  const dp = Array(a.length + 1).fill(0).map(() => Array(b.length + 1).fill(0));
 
-  for (let i = a.length - 1; i >= 0; i--) {
-    for (let j = b.length - 1; j >= 0; j--) {
-      dp[i][j] = (a[i] === b[j])
-        ? dp[i + 1][j + 1] + 1
-        : Math.max(dp[i + 1][j], dp[i][j + 1]);
+  const setB = new Set(b);
+  const setA = new Set(a);
+
+  let out = "";
+
+  for (let i = 0; i < a.length; i++) {
+    if (!setB.has(a[i])) {
+      out += wrap(a[i], "remove");
     }
   }
 
-  let i = 0, j = 0, out = "";
-
-  while (i < a.length && j < b.length) {
-    if (a[i] === b[j]) {
-      i++; j++; // skip unchanged
-    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
-      out += wrap(a[i++], "remove");
-    } else {
-      out += wrap(b[j++], "add");
+  for (let j = 0; j < b.length; j++) {
+    if (!setA.has(b[j])) {
+      out += wrap(b[j], "add");
     }
   }
-
-  while (i < a.length) out += wrap(a[i++], "remove");
-  while (j < b.length) out += wrap(b[j++], "add");
 
   return out;
 }
