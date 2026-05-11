@@ -426,13 +426,11 @@ function compare() {
   applyFilters();
 }
 
-/* SEARCH NOW USES SAME SYSTEM */
 
 function runSearch() {
   updateVisibleFiles();
 }
 
-/* ---------------- EVERYTHING ELSE UNCHANGED ---------------- */
 
 function show(name) {
 
@@ -461,68 +459,90 @@ function diffBlocks(a, b) {
   let i = 0;
   let j = 0;
 
+  function countSame(i0, j0) {
+    let n = 0;
+    while (
+      i0 + n < a.length &&
+      j0 + n < b.length &&
+      a[i0 + n] === b[j0 + n]
+    ) n++;
+    return n;
+  }
+
   while (i < a.length && j < b.length) {
 
     if (a[i] === b[j]) {
-      out.push(wrap(a[i], ""));
+
+      let start = i;
+      let count = 0;
+
+      while (i < a.length && j < b.length && a[i] === b[j]) {
+        i++;
+        j++;
+        count++;
+      }
+
+      if (count === 1) {
+        out.push(wrap(a[start], ""));
+      } else {
+        out.push(wrap(`↕ ${count} unchanged lines`, ""));
+      }
+
+      continue;
+    }
+
+    let startJ = j;
+    let insertCount = 0;
+
+    while (
+      j < b.length &&
+      (i >= a.length || !a.slice(i, i + 5).includes(b[j]))
+    ) {
+      out.push(wrap(b[j], "add"));
+      j++;
+      insertCount++;
+
+      if (insertCount > 50) {
+        out.push(wrap(`+ ${insertCount}+ added lines`, "add"));
+        break;
+      }
+    }
+
+    if (insertCount > 50) continue;
+
+    let startI = i;
+    let removeCount = 0;
+
+    while (
+      i < a.length &&
+      (j >= b.length || !b.slice(j, j + 5).includes(a[i]))
+    ) {
+      out.push(wrap(a[i], "remove"));
+      i++;
+      removeCount++;
+
+      if (removeCount > 50) {
+        out.push(wrap(`- ${removeCount}+ removed lines`, "remove"));
+        break;
+      }
+    }
+
+    if (removeCount > 50) continue;
+
+    if (i < a.length && j < b.length) {
+      out.push(wrap(a[i], "remove"));
+      out.push(wrap(b[j], "add"));
       i++;
       j++;
-      continue;
     }
-
-    let foundInB = -1;
-
-    for (let k = j + 1; k < Math.min(j + 40, b.length); k++) {
-      if (a[i] === b[k]) {
-        foundInB = k;
-        break;
-      }
-    }
-
-    if (foundInB !== -1) {
-
-      while (j < foundInB) {
-        out.push(wrap(b[j], "add"));
-        j++;
-      }
-
-      continue;
-    }
-
-    let foundInA = -1;
-
-    for (let k = i + 1; k < Math.min(i + 40, a.length); k++) {
-      if (a[k] === b[j]) {
-        foundInA = k;
-        break;
-      }
-    }
-
-    if (foundInA !== -1) {
-
-      while (i < foundInA) {
-        out.push(wrap(a[i], "remove"));
-        i++;
-      }
-
-      continue;
-    }
-
-    out.push(wrap(a[i], "remove"));
-    out.push(wrap(b[j], "add"));
-
-    i++;
-    j++;
-  }
-  
-  while (i < a.length) {
-    out.push(wrap(a[i], "remove"));
-    i++;
   }
 
-  while (j < b.length) {
-    out.push(wrap(b[j], "add"));
-    j++;
+  if (i < a.length) {
+    out.push(wrap(`- ${a.length - i} removed lines`, "remove"));
+  }
+
+  if (j < b.length) {
+    out.push(wrap(`+ ${b.length - j} added lines`, "add"));
   }
 
   return out.join("");
