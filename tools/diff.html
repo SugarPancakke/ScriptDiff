@@ -304,89 +304,283 @@ let selectedName = null;
 
 let matches = [];
 let currentMatch = 0;
-let diffMarks = [];
 
 function toggleFilter() {
   const menu = document.getElementById("filterMenu");
   menu.style.display = menu.style.display === "flex" ? "none" : "flex";
 }
 
-/* BLOCK COLLECTOR */
-function collectDiffs() {
-  diffMarks = [...document.querySelectorAll(".block.add, .block.remove")];
-  currentMatch = 0;
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".filter")) {
+    document.getElementById("filterMenu").style.display = "none";
+  }
+});
+
+/* ---------------- FIXED FILTER LOGIC ---------------- */
+
+function updateVisibleFiles() {
+
+  const search = document.getElementById("searchBox").value.trim().toLowerCase();
+
+  const allowed = [...document.querySelectorAll("#filterMenu input:checked")]
+    .map(e => e.value);
+
+  document.querySelectorAll(".file").forEach(file => {
+
+    const name = file.dataset.name;
+    const status = file.dataset.status;
+
+    const oldText = (oldData[name] || "").toLowerCase();
+    const newText = (newData[name] || "").toLowerCase();
+
+    const matchesSearch =
+      !search ||
+      oldText.includes(search) ||
+      newText.includes(search);
+
+    const matchesFilter =
+      allowed.includes(status);
+
+    file.style.display = (matchesSearch && matchesFilter) ? "" : "none";
+  });
 }
 
-function gotoDiff(index) {
-  if (!diffMarks.length) return;
-
-  diffMarks.forEach(m => m.classList.remove("active-highlight"));
-
-  currentMatch = (index + diffMarks.length) % diffMarks.length;
-
-  const el = diffMarks[currentMatch];
-  el.classList.add("active-highlight");
-
-  el.scrollIntoView({ behavior: "smooth", block: "center" });
+function applyFilters() {
+  updateVisibleFiles();
 }
 
-/* 🔥 FULL KEYBOARD CONTROL FIX */
-document.addEventListener("keydown", (e) => {
+document.querySelectorAll("#filterMenu input").forEach(cb => {
+  cb.addEventListener("change", applyFilters);
+});
 
-  const tag = document.activeElement.tagName;
-  if (tag === "INPUT" || tag === "TEXTAREA") return;
+document.getElementById("showOnlyChanges")
+  .addEventListener("change", () => {
+    if (selectedName) show(selectedName);
+  });
 
-  if (!diffMarks.length) return;
+/* ---------------- FILE LOGIC ---------------- */
 
-  const keys = ["ArrowDown","ArrowUp","PageDown","PageUp"];
+function cleanText(t) {
+  return t.replace(/\r/g, "");
+}
 
-  if (keys.includes(e.key)) {
-    e.preventDefault();
-    e.stopPropagation();
+function normalize(file) {
+  const path = file.webkitRelativePath || file.name;
+  return path.includes("/") ? path.split("/").slice(1).join("/") : path;
+}
+
+function readFiles(files, store, cb) {
+  let done = 0;
+  if (!files.length) return cb();
+
+  for (let f of files) {
+    const r = new FileReader();
+
+    r.onload = e => {
+      store[normalize(f)] = cleanText(e.target.result);
+      done++;
+      if (done === files.length) cb();
+    };
+
+    r.readAsText(f);
   }
+}
 
-  // k = next diff (down)
-  if (e.key === "k" || e.key === "ArrowDown" || e.key === "PageDown") {
-    gotoDiff(currentMatch + 1);
-  }
+function loadFiles() {
+  oldData = {};
+  newData = {};
+  selectedName = null;
 
-  // j = previous diff (up)
-  if (e.key === "j" || e.key === "ArrowUp" || e.key === "PageUp") {
-    gotoDiff(currentMatch - 1);
-  }
+  readFiles(oldFiles.files, oldData, () => {
+    readFiles(newFiles.files, newData, compare);
+  });
+}
 
-}, true);
+function compare() {
+  const list = document.getElementById("fileList");
+  list.innerHTML = "";
 
-/* SHOW FUNCTION HOOK */
+  const all = new Set([...Object.keys(oldData), ...Object.keys(newData)]);
+
+  all.forEach(name => {
+
+    const o = oldData[name];
+    const n = newData[name];
+
+    let status = "unchanged";
+    if (!o) status = "added";
+    else if (!n) status = "removed";
+    else if (o !== n) status = "modified";
+
+    const div = document.createElement("div");
+    div.className = "file";
+    div.dataset.name = name;
+    div.dataset.status = status;
+
+    div.onclick = () => show(name);
+
+    div.innerHTML = `
+      <span>${name}</span>
+      <span class="dot ${status}"></span>
+    `;
+
+    list.appendChild(div);
+  });
+
+  runSearch();
+  applyFilters();
+}
+
+function runSearch() {
+  updateVisibleFiles();
+}
+
+/* ---------------- UPDATED SHOW FUNCTION ---------------- */
+
 function show(name) {
+
   selectedName = name;
 
+  document.querySelectorAll(".file").forEach(el => {
+    el.classList.toggle("active", el.dataset.name === name);
+  });
+
+  const a = oldData[name] || "";
+  const b = newData[name] || "";
   const viewer = document.getElementById("viewer");
-  const a = (oldData[name] || "").split("\n");
-  const b = (newData[name] || "").split("\n");
 
-  viewer.innerHTML = diffBlocks(a, b);
+  const A = a.split("\n");
+  const B = b.split("\n");
 
-  collectDiffs();
+  if (A.length > 5000 || B.length > 5000) {
+    viewer.innerHTML =
+      `<div>Too many lines</div>` +
+      diffBlocksLarge(A, B);
+  } else {
+    viewer.innerHTML = diffBlocks(A, B);
+  }
+
+  highlightSearch();
 }
 
-/* DIFF (unchanged logic placeholder) */
-function diffBlocks(a, b) {
+
+function diffBlocksLarge(a, b) {
+
+  const setB = new Set(b);
+  const setA = new Set(a);
+
   let out = "";
-  for (let i = 0; i < Math.max(a.length, b.length); i++) {
-    if (a[i] !== b[i]) {
-      if (a[i]) out += `<div class="block remove">${a[i]}</div>`;
-      if (b[i]) out += `<div class="block add">${b[i]}</div>`;
+
+  for (let i = 0; i < a.length; i++) {
+    if (!setB.has(a[i])) {
+      out += wrap(a[i], "remove");
     }
   }
+
+  for (let j = 0; j < b.length; j++) {
+    if (!setA.has(b[j])) {
+      out += wrap(b[j], "add");
+    }
+  }
+
   return out;
 }
 
-/* FILE LOAD (unchanged minimal stub) */
-function loadFiles() { console.log("load"); }
-function runSearch() {}
-function gotoMatch() {}
+/* ---------------- ORIGINAL DIFF ---------------- */
 
+function diffBlocks(a, b) {
+
+  const onlyChanges = document.getElementById("showOnlyChanges")?.checked;
+
+  const dp = Array(a.length + 1).fill(0).map(() => Array(b.length + 1).fill(0));
+
+  for (let i = a.length - 1; i >= 0; i--) {
+    for (let j = b.length - 1; j >= 0; j--) {
+      dp[i][j] = (a[i] === b[j])
+        ? dp[i + 1][j + 1] + 1
+        : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+  }
+
+  let i = 0, j = 0, out = "";
+
+  while (i < a.length && j < b.length) {
+
+    if (a[i] === b[j]) {
+
+      if (!onlyChanges) {
+        out += wrap(a[i], "");
+      }
+
+      i++; j++;
+
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+      out += wrap(a[i++], "remove");
+    } else {
+      out += wrap(b[j++], "add");
+    }
+  }
+
+  while (i < a.length) out += wrap(a[i++], "remove");
+  while (j < b.length) out += wrap(b[j++], "add");
+
+  return out;
+}
+function wrap(text, type) {
+  if (!text) return `<div class="block ${type}">&nbsp;</div>`;
+  return `<div class="block ${type}">${escapeHtml(text)}</div>`;
+}
+
+function highlightSearch() {
+
+  const search = document.getElementById("searchBox").value.trim();
+
+  matches = [];
+  currentMatch = 0;
+
+  if (!search) return;
+
+  const blocks = document.querySelectorAll(".block");
+
+  blocks.forEach(block => {
+    const original = block.textContent;
+    const regex = new RegExp(escapeRegExp(search), "gi");
+
+    block.innerHTML = escapeHtml(original)
+      .replace(regex, m => `<span class="highlight">${m}</span>`);
+  });
+
+  matches = [...document.querySelectorAll(".highlight")];
+
+  if (matches.length) gotoMatch(0);
+}
+
+function gotoMatch(index) {
+
+  if (!matches.length) return;
+
+  matches.forEach(m => m.classList.remove("active-highlight"));
+
+  currentMatch = (index + matches.length) % matches.length;
+
+  const el = matches[currentMatch];
+  el.classList.add("active-highlight");
+
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  document.getElementById("matchCounter").textContent =
+    `${currentMatch + 1} / ${matches.length}`;
+}
+
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function escapeHtml(t) {
+  return t.replace(/&/g,"&amp;")
+          .replace(/</g,"&lt;")
+          .replace(/>/g,"&gt;");
+}
 </script>
 
 </body>
