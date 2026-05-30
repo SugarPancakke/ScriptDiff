@@ -499,16 +499,20 @@ document.addEventListener("keydown", (e) => {
 
   if (!diffMarks.length) return;
 
-  if (e.key === "ArrowDown") {
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
     e.preventDefault();
+    e.stopPropagation();
+  }
+
+  if (e.key === "ArrowDown") {
     gotoDiff(currentDiff + 1);
   }
 
   if (e.key === "ArrowUp") {
-    e.preventDefault();
     gotoDiff(currentDiff - 1);
   }
-});
+
+ }, true); 
 
 function diffBlocksLarge(a, b) {
 
