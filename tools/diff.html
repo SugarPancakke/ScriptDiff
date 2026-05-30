@@ -23,9 +23,7 @@ body {
   z-index: 1000;
 }
 
-.spacer {
-  flex: 1;
-}
+.spacer { flex: 1; }
 
 .upload-label {
   display: flex;
@@ -47,25 +45,19 @@ body {
   border: none;
   padding: 10px 12px;
   font-size: 14px;
-  font-family: monospace;
   width: 240px;
   outline: none;
-}
-
-.search-box::placeholder {
-  color: #aaa;
+  font-family: monospace;
 }
 
 .nav-btn {
   padding: 10px 14px;
-  font-size: 14px;
 }
 
 #matchCounter {
   min-width: 60px;
   text-align: center;
   color: #ccc;
-  font-size: 14px;
 }
 
 button {
@@ -73,43 +65,8 @@ button {
   color: white;
   border: none;
   padding: 12px 30px;
-  font-size: 16px;
   cursor: pointer;
   font-family: monospace;
-}
-
-button:active {
-  transform: translateY(1px);
-  background: #3f3a3a;
-}
-
-.filter {
-  position: relative;
-}
-
-.filter-menu {
-  position: absolute;
-  top: 110%;
-  left: 0;
-  background: #2a2525;
-  border: 1px solid #444;
-  padding: 10px;
-  display: none;
-  flex-direction: column;
-  gap: 6px;
-  z-index: 1100;
-}
-
-.filter-menu label {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.filter-menu input[type="checkbox"] {
-  accent-color: #888;
 }
 
 .container {
@@ -122,94 +79,49 @@ button:active {
   width: 25%;
   background: #2b2626;
   overflow-y: auto;
-  overflow-x: hidden;
   border-right: 1px solid #444;
 }
 
 .file {
-  position: relative;
-  padding: 8px 34px 8px 8px;
+  padding: 8px;
   border-bottom: 1px solid #3d3838;
   cursor: pointer;
-  word-break: break-word;
-}
-
-.file:hover {
-  background: #3d3838;
 }
 
 .file.active {
   background: #4d4747;
 }
 
-.dot {
-  position: absolute;
-  top:50%;
-  right:12px;
-  transform:translateY(-50%);
-  width:11px;
-  height:11px;
-  border-radius:50%;
-}
-
-.modified { background:#fbc02d; }
-.added { background:#43a047; }
-.removed { background:#e53935; }
-.unchanged { display:none; }
-
 .right {
-  width:75%;
-  padding:10px;
-  overflow-y:auto;
+  width: 75%;
+  padding: 10px;
+  overflow-y: auto;
 }
 
 .block {
-  margin-bottom:2px;
-  padding:6px 8px;
-  border-radius:6px;
-  background:#2a2525;
-  white-space:pre-wrap;
-  word-break:break-word;
+  margin-bottom: 2px;
+  padding: 6px 8px;
+  background: #2a2525;
+  white-space: pre-wrap;
+  border-radius: 6px;
 }
 
-.add{
- background:rgba(46,125,50,.25);
- border-left:3px solid #2e7d32;
+.add {
+  background: rgba(46,125,50,0.25);
+  border-left: 3px solid #2e7d32;
 }
 
-.remove{
- background:rgba(183,28,28,.25);
- border-left:3px solid #b71c1c;
- text-decoration:line-through;
- opacity:.85;
+.remove {
+  background: rgba(183,28,28,0.25);
+  border-left: 3px solid #b71c1c;
+  text-decoration: line-through;
+  opacity: 0.85;
 }
 
-.highlight{
- background:#ffd54f;
- color:black;
- border-radius:2px;
- padding:0 1px;
+.active-highlight {
+  outline: 2px solid #ff9800;
 }
 
-.active-highlight{
- background:#ff9800;
- color:black;
-}
-
-.left::-webkit-scrollbar,
-.right::-webkit-scrollbar{
- width:10px;
-}
-
-.left::-webkit-scrollbar-thumb,
-.right::-webkit-scrollbar-thumb{
- background:#4a4040;
- border-radius:8px;
-}
-
-.upload-label.dragover{
- outline:2px dashed #fbc02d;
-}
 </style>
 </head>
 
@@ -231,574 +143,265 @@ New Folder:
 
 <div class="spacer"></div>
 
-<div class="filter">
+<input id="searchBox" class="search-box" placeholder="Search..." oninput="runSearch()">
 
-<button class="nav-btn" onclick="toggleFilter()">⚙</button>
-
-<div class="filter-menu" id="filterMenu">
-
-<label><input checked type="checkbox" value="added">Added</label>
-<label><input checked type="checkbox" value="modified">Modified</label>
-<label><input checked type="checkbox" value="removed">Removed</label>
-<label><input checked type="checkbox" value="unchanged">Unchanged</label>
-
-</div>
-
-</div>
-
-<input
-id="searchBox"
-class="search-box"
-placeholder="Search..."
-oninput="runSearch()"
->
-
-<button class="nav-btn" onclick="gotoMatch(currentMatch-1)">↑</button>
-<button class="nav-btn" onclick="gotoMatch(currentMatch+1)">↓</button>
+<button onclick="gotoMatch(currentMatch-1)">↑</button>
+<button onclick="gotoMatch(currentMatch+1)">↓</button>
 
 <div id="matchCounter">0 / 0</div>
 
 </div>
 
 <div class="container">
-
-<div class="left" id="fileList"></div>
-
-<div class="right" id="viewer">
-Select file
-</div>
-
+  <div class="left" id="fileList"></div>
+  <div class="right" id="viewer">Select file</div>
 </div>
 
 <script>
 
-let oldData={}
-let newData={}
-let selectedName=null
+let oldData = {};
+let newData = {};
+let selectedName = null;
 
-let matches=[]
-let currentMatch=0
+/* SEARCH */
+let matches = [];
+let currentMatch = 0;
 
-function toggleFilter(){
+/* DIFF NAVIGATION */
+let changedBlocks = [];
+let currentChanged = -1;
 
-const menu=document.getElementById("filterMenu")
+/* ---------------- FILE LOADING ---------------- */
 
-menu.style.display=
-menu.style.display==="flex"
-?"none"
-:"flex"
-
-}
-
-document.addEventListener("click",(e)=>{
-
-if(!e.target.closest(".filter")){
-
-document.getElementById("filterMenu").style.display="none"
-
-}
-
-})
-
-function updateVisibleFiles(){
-
-const search=
-document.getElementById("searchBox")
-.value
-.trim()
-.toLowerCase()
-
-const allowed=
-[...document.querySelectorAll("#filterMenu input:checked")]
-.map(x=>x.value)
-
-document.querySelectorAll(".file")
-.forEach(file=>{
-
-const name=file.dataset.name
-const status=file.dataset.status
-
-const oldText=(oldData[name]||"").toLowerCase()
-const newText=(newData[name]||"").toLowerCase()
-
-const searchMatch=
-!search ||
-oldText.includes(search) ||
-newText.includes(search)
-
-const filterMatch=
-allowed.includes(status)
-
-file.style.display=
-(searchMatch && filterMatch)
-?""
-:"none"
-
-})
-
-}
-
-function applyFilters(){
-
-updateVisibleFiles()
-
-}
-
-document.querySelectorAll("#filterMenu input")
-.forEach(cb=>{
-
-cb.addEventListener(
-"change",
-applyFilters
-)
-
-})
-
-function cleanText(t){
-
-return t.replace(/\r/g,"")
-
-}
+function cleanText(t){ return t.replace(/\r/g,""); }
 
 function normalize(file){
-
-const path=file.webkitRelativePath || file.name
-
-return path.includes("/")
-?path.split("/").slice(1).join("/")
-:path
-
+  const path = file.webkitRelativePath || file.name;
+  return path.includes("/") ? path.split("/").slice(1).join("/") : path;
 }
 
-function readFiles(files,store,cb){
+function readFiles(files, store, cb){
+  let done = 0;
+  if (!files.length) return cb();
 
-let done=0
-
-if(!files.length){
-cb()
-return
-}
-
-for(let f of files){
-
-const r=new FileReader()
-
-r.onload=e=>{
-
-store[normalize(f)]
-=
-cleanText(e.target.result)
-
-done++
-
-if(done===files.length){
-
-cb()
-
-}
-
-}
-
-r.readAsText(f)
-
-}
-
+  for (let f of files){
+    const r = new FileReader();
+    r.onload = e => {
+      store[normalize(f)] = cleanText(e.target.result);
+      done++;
+      if (done === files.length) cb();
+    };
+    r.readAsText(f);
+  }
 }
 
 function loadFiles(){
+  oldData = {};
+  newData = {};
+  selectedName = null;
 
-oldData={}
-newData={}
-selectedName=null
-
-readFiles(
-oldFiles.files,
-oldData,
-()=>{
-
-readFiles(
-newFiles.files,
-newData,
-compare
-)
-
+  readFiles(oldFiles.files, oldData, () => {
+    readFiles(newFiles.files, newData, compare);
+  });
 }
-)
 
-}
+/* ---------------- COMPARE ---------------- */
 
 function compare(){
+  const list = document.getElementById("fileList");
+  list.innerHTML = "";
 
-const list=
-document.getElementById("fileList")
+  const all = new Set([...Object.keys(oldData), ...Object.keys(newData)]);
 
-list.innerHTML=""
+  all.forEach(name => {
+    const o = oldData[name];
+    const n = newData[name];
 
-const all=
-new Set([
-...Object.keys(oldData),
-...Object.keys(newData)
-])
+    let status = "unchanged";
+    if (!o) status = "added";
+    else if (!n) status = "removed";
+    else if (o !== n) status = "modified";
 
-all.forEach(name=>{
+    const div = document.createElement("div");
+    div.className = "file";
+    div.dataset.name = name;
+    div.onclick = () => show(name);
 
-const o=oldData[name]
-const n=newData[name]
+    div.innerHTML = name;
+    list.appendChild(div);
+  });
 
-let status="unchanged"
-
-if(!o)
-status="added"
-else if(!n)
-status="removed"
-else if(o!==n)
-status="modified"
-
-const div=document.createElement("div")
-
-div.className="file"
-
-div.dataset.name=name
-div.dataset.status=status
-
-div.onclick=()=>show(name)
-
-div.innerHTML=`
-<span>${name}</span>
-<span class="dot ${status}"></span>
-`
-
-list.appendChild(div)
-
-})
-
-runSearch()
-
-applyFilters()
-
+  runSearch();
 }
 
-function runSearch(){
-
-updateVisibleFiles()
-
-if(selectedName){
-
-show(selectedName)
-
-}
-
-}
+/* ---------------- SHOW FILE ---------------- */
 
 function show(name){
 
-selectedName=name
+  selectedName = name;
 
-document.querySelectorAll(".file")
-.forEach(el=>{
+  document.querySelectorAll(".file").forEach(f=>{
+    f.classList.toggle("active", f.dataset.name === name);
+  });
 
-el.classList.toggle(
-"active",
-el.dataset.name===name
-)
+  const a = (oldData[name]||"").split("\n");
+  const b = (newData[name]||"").split("\n");
 
-})
+  const viewer = document.getElementById("viewer");
 
-const a=(oldData[name]||"").split("\n")
-const b=(newData[name]||"").split("\n")
+  viewer.innerHTML = diffBlocks(a,b);
 
-const viewer=
-document.getElementById("viewer")
-
-if(
-a.length>5000 ||
-b.length>5000
-){
-
-viewer.innerHTML=
-diffBlocksLarge(a,b)
-
-}else{
-
-viewer.innerHTML=
-diffBlocks(a,b)
+  highlightSearch();
+  refreshChangedBlocks();
 
 }
 
-highlightSearch()
-
-}
-
-function diffBlocksLarge(a,b){
-
-const setA=new Set(a)
-const setB=new Set(b)
-
-let out=""
-
-for(let line of a){
-
-if(!setB.has(line))
-out+=wrap(line,"remove")
-
-}
-
-for(let line of b){
-
-if(!setA.has(line))
-out+=wrap(line,"add")
-
-}
-
-return out
-
-}
+/* ---------------- DIFF ---------------- */
 
 function diffBlocks(a,b){
 
-const dp=
-Array(a.length+1)
-.fill(0)
-.map(()=>
-Array(b.length+1).fill(0)
-)
+  const dp = Array(a.length+1).fill(0).map(()=>Array(b.length+1).fill(0));
 
-for(let i=a.length-1;i>=0;i--){
+  for (let i=a.length-1;i>=0;i--){
+    for (let j=b.length-1;j>=0;j--){
+      dp[i][j] =
+        (a[i]===b[j])
+        ? dp[i+1][j+1]+1
+        : Math.max(dp[i+1][j],dp[i][j+1]);
+    }
+  }
 
-for(let j=b.length-1;j>=0;j--){
+  let i=0,j=0,out="";
 
-dp[i][j]=
-(a[i]===b[j])
-?dp[i+1][j+1]+1
-:Math.max(
-dp[i+1][j],
-dp[i][j+1]
-)
+  while(i<a.length && j<b.length){
 
-}
+    if(a[i]===b[j]){
+      out += wrap(a[i],"");
+      i++; j++;
+    }
+    else if(dp[i+1][j] >= dp[i][j+1]){
+      out += wrap(a[i++],"remove");
+    }
+    else{
+      out += wrap(b[j++],"add");
+    }
+  }
 
-}
+  while(i<a.length) out += wrap(a[i++],"remove");
+  while(j<b.length) out += wrap(b[j++],"add");
 
-let i=0
-let j=0
-let out=""
-
-while(
-i<a.length &&
-j<b.length
-){
-
-if(a[i]===b[j]){
-
-out+=wrap(a[i],"")
-
-i++
-j++
-
-}else if(
-dp[i+1][j]>=dp[i][j+1]
-){
-
-out+=wrap(a[i++],"remove")
-
-}else{
-
-out+=wrap(b[j++],"add")
-
-}
-
-}
-
-while(i<a.length)
-out+=wrap(a[i++],"remove")
-
-while(j<b.length)
-out+=wrap(b[j++],"add")
-
-return out
-
+  return out;
 }
 
 function wrap(text,type){
-
-if(!text){
-
-return `<div class="block ${type}">&nbsp;</div>`
-
+  return `<div class="block ${type}">${escapeHtml(text)}</div>`;
 }
 
-return `
-<div class="block ${type}">
-${escapeHtml(text)}
-</div>
-`
+/* ---------------- SEARCH ---------------- */
 
+function runSearch(){
+  highlightSearch();
 }
 
 function highlightSearch(){
 
-const search=
-document.getElementById("searchBox")
-.value
-.trim()
+  const search = document.getElementById("searchBox").value.trim();
 
-matches=[]
-currentMatch=0
+  matches = [];
+  currentMatch = 0;
 
-document
-.querySelectorAll(".block")
-.forEach(block=>{
+  if (!search) return;
 
-const original=
-block.textContent
+  document.querySelectorAll(".block").forEach(block=>{
+    const original = block.textContent;
 
-if(!search){
+    const regex = new RegExp(escapeRegExp(search),"gi");
 
-block.innerHTML=
-escapeHtml(original)
+    block.innerHTML =
+      escapeHtml(original)
+      .replace(regex, m=>`<span class="highlight">${m}</span>`);
+  });
 
-return
+  matches = [...document.querySelectorAll(".highlight")];
 
+  if (matches.length) gotoMatch(0);
 }
 
-const regex=
-new RegExp(
-escapeRegExp(search),
-"gi"
-)
-
-block.innerHTML=
-escapeHtml(original)
-.replace(
-regex,
-m=>`<span class="highlight">${m}</span>`
-)
-
-})
-
-matches=
-[
-...document.querySelectorAll(".highlight")
-]
-
-if(matches.length){
-
-gotoMatch(0)
-
-}else{
-
-document.getElementById(
-"matchCounter"
-).textContent="0 / 0"
-
-}
-
-}
+/* ---------------- SEARCH NAV ---------------- */
 
 function gotoMatch(index){
 
-if(!matches.length)
-return
+  if (!matches.length) return;
 
-matches.forEach(m=>
-m.classList.remove(
-"active-highlight"
-)
-)
+  matches.forEach(m=>m.classList.remove("active-highlight"));
 
-currentMatch=
-(index+matches.length)
-%
-matches.length
+  currentMatch = (index + matches.length) % matches.length;
 
-const el=
-matches[currentMatch]
+  const el = matches[currentMatch];
+  el.classList.add("active-highlight");
 
-el.classList.add(
-"active-highlight"
-)
+  el.scrollIntoView({behavior:"smooth",block:"center"});
 
-el.scrollIntoView({
-
-behavior:"smooth",
-block:"center"
-
-})
-
-document.getElementById(
-"matchCounter"
-).textContent=
-`${currentMatch+1} / ${matches.length}`
-
+  document.getElementById("matchCounter").textContent =
+    `${currentMatch+1} / ${matches.length}`;
 }
 
+/* ---------------- DIFF NAV ---------------- */
+
+function refreshChangedBlocks(){
+  changedBlocks = [...document.querySelectorAll(".add, .remove")];
+  currentChanged = -1;
+}
+
+function gotoChanged(index){
+
+  if (!changedBlocks.length) return;
+
+  changedBlocks.forEach(b=>b.classList.remove("active-highlight"));
+
+  currentChanged =
+    (index + changedBlocks.length) % changedBlocks.length;
+
+  const el = changedBlocks[currentChanged];
+  el.classList.add("active-highlight");
+
+  el.scrollIntoView({behavior:"smooth",block:"center"});
+}
+
+/* ---------------- KEYBINDS ---------------- */
+
+document.addEventListener("keydown",(e)=>{
+
+  const tag = document.activeElement.tagName;
+  if (tag==="INPUT" || tag==="TEXTAREA" || document.activeElement.isContentEditable)
+    return;
+
+  const key = e.key.toLowerCase();
+
+  if (key==="j"){
+    e.preventDefault();
+    gotoChanged(currentChanged+1);
+  }
+
+  if (key==="k"){
+    e.preventDefault();
+    gotoChanged(currentChanged-1);
+  }
+
+});
+
+/* ---------------- HELPERS ---------------- */
+
 function escapeRegExp(text){
-
-return text.replace(
-/[.*+?^${}()|[\]\\]/g,
-"\\$&"
-)
-
+  return text.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
 }
 
 function escapeHtml(t){
-
-return t
-.replace(/&/g,"&amp;")
-.replace(/</g,"&lt;")
-.replace(/>/g,"&gt;")
-
+  return t
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;");
 }
-
-/* ===========================
-   KEYBOARD NAVIGATION
-=========================== */
-
-document.addEventListener(
-"keydown",
-(e)=>{
-
-const tag=
-document.activeElement.tagName
-
-if(
-tag==="INPUT" ||
-tag==="TEXTAREA" ||
-document.activeElement.isContentEditable
-){
-
-return
-
-}
-
-if(!matches.length)
-return
-
-const key=
-e.key.toLowerCase()
-
-if(key==="j"){
-
-e.preventDefault()
-
-gotoMatch(
-currentMatch+1
-)
-
-}
-
-if(key==="k"){
-
-e.preventDefault()
-
-gotoMatch(
-currentMatch-1
-)
-
-}
-
-}
-)
 
 </script>
 
