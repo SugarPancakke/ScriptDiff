@@ -305,6 +305,10 @@ let selectedName = null;
 let matches = [];
 let currentMatch = 0;
 
+/* ADDED FOR DIFF NAVIGATION */
+let diffMarks = [];
+let currentDiff = 0;
+
 function toggleFilter() {
   const menu = document.getElementById("filterMenu");
   menu.style.display = menu.style.display === "flex" ? "none" : "flex";
@@ -461,8 +465,50 @@ function show(name) {
   }
 
   highlightSearch();
+  collectDiffs();
 }
 
+/* DIFF COLLECTION */
+function collectDiffs() {
+  diffMarks = [...document.querySelectorAll(".block.add, .block.remove")];
+  currentDiff = 0;
+}
+
+function gotoDiff(index) {
+
+  if (!diffMarks.length) return;
+
+  diffMarks.forEach(m => m.classList.remove("active-highlight"));
+
+  currentDiff = (index + diffMarks.length) % diffMarks.length;
+
+  const el = diffMarks[currentDiff];
+  el.classList.add("active-highlight");
+
+  el.scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+}
+
+/* KEYBOARD NAVIGATION */
+document.addEventListener("keydown", (e) => {
+
+  const tag = document.activeElement.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+  if (!diffMarks.length) return;
+
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    gotoDiff(currentDiff + 1);
+  }
+
+  if (e.key === "ArrowUp") {
+    e.preventDefault();
+    gotoDiff(currentDiff - 1);
+  }
+});
 
 function diffBlocksLarge(a, b) {
 
@@ -526,6 +572,7 @@ function diffBlocks(a, b) {
 
   return out;
 }
+
 function wrap(text, type) {
   if (!text) return `<div class="block ${type}">&nbsp;</div>`;
   return `<div class="block ${type}">${escapeHtml(text)}</div>`;
