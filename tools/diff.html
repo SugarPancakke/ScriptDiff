@@ -12,7 +12,6 @@ body {
   font-family: monospace;
 }
 
-/* TOP BAR */
 .topbar {
   padding: 12px;
   display: flex;
@@ -24,7 +23,6 @@ body {
   z-index: 1000;
 }
 
-/* PUSH SEARCH TO FAR RIGHT */
 .spacer {
   flex: 1;
 }
@@ -43,7 +41,6 @@ body {
   padding: 6px;
 }
 
-/* SEARCH */
 .search-box {
   background: #3d3838;
   color: white;
@@ -59,7 +56,6 @@ body {
   color: #aaa;
 }
 
-/* NAV BUTTONS */
 .nav-btn {
   padding: 10px 14px;
   font-size: 14px;
@@ -72,7 +68,6 @@ body {
   font-size: 14px;
 }
 
-/* BUTTON */
 button {
   background: #4d4747;
   color: white;
@@ -88,12 +83,10 @@ button:active {
   background: #3f3a3a;
 }
 
-/* FILTER WRAPPER */
 .filter {
   position: relative;
 }
 
-/* FILTER MENU */
 .filter-menu {
   position: absolute;
   top: 110%;
@@ -119,22 +112,18 @@ button:active {
   accent-color: #888;
 }
 
-/* LAYOUT */
 .container {
   display: flex;
   height: calc(100vh - 74px);
   overflow: hidden;
 }
 
-/* LEFT PANEL */
 .left {
   width: 25%;
   background: #2b2626;
   overflow-y: auto;
   overflow-x: hidden;
   border-right: 1px solid #444;
-  position: relative;
-  z-index: 1;
 }
 
 .file {
@@ -143,7 +132,6 @@ button:active {
   border-bottom: 1px solid #3d3838;
   cursor: pointer;
   word-break: break-word;
-  overflow-wrap: anywhere;
 }
 
 .file:hover {
@@ -154,102 +142,73 @@ button:active {
   background: #4d4747;
 }
 
-/* STATUS DOT */
 .dot {
   position: absolute;
-  top: 50%;
-  right: 12px;
-  transform: translateY(-50%);
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
+  top:50%;
+  right:12px;
+  transform:translateY(-50%);
+  width:11px;
+  height:11px;
+  border-radius:50%;
 }
 
-.modified { background: #fbc02d; }
-.added { background: #43a047; }
-.removed { background: #e53935; }
-.unchanged { display: none; }
+.modified { background:#fbc02d; }
+.added { background:#43a047; }
+.removed { background:#e53935; }
+.unchanged { display:none; }
 
-/* RIGHT VIEWER */
 .right {
-  width: 75%;
-  padding: 10px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  position: relative;
-  z-index: 1;
+  width:75%;
+  padding:10px;
+  overflow-y:auto;
 }
 
-/* BLOCKS */
 .block {
-  margin-bottom: 2px;
-  padding: 6px 8px;
-  border-radius: 6px;
-  background: #2a2525;
-  font-family: monospace;
-  white-space: pre-wrap;
-  word-break: break-word;
-  overflow-wrap: anywhere;
+  margin-bottom:2px;
+  padding:6px 8px;
+  border-radius:6px;
+  background:#2a2525;
+  white-space:pre-wrap;
+  word-break:break-word;
 }
 
-.add {
-  background: rgba(46,125,50,0.25);
-  border-left: 3px solid #2e7d32;
+.add{
+ background:rgba(46,125,50,.25);
+ border-left:3px solid #2e7d32;
 }
 
-.remove {
-  background: rgba(183,28,28,0.25);
-  border-left: 3px solid #b71c1c;
-  text-decoration: line-through;
-  opacity: 0.85;
+.remove{
+ background:rgba(183,28,28,.25);
+ border-left:3px solid #b71c1c;
+ text-decoration:line-through;
+ opacity:.85;
 }
 
-/* SEARCH HIGHLIGHT */
-.highlight {
-  background: #ffd54f;
-  color: black;
-  border-radius: 2px;
-  padding: 0 1px;
+.highlight{
+ background:#ffd54f;
+ color:black;
+ border-radius:2px;
+ padding:0 1px;
 }
 
-.active-highlight {
-  background: #ff9800;
-  color: black;
+.active-highlight{
+ background:#ff9800;
+ color:black;
 }
 
-/* DARK SCROLLBARS */
 .left::-webkit-scrollbar,
-.right::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-.left::-webkit-scrollbar-track,
-.right::-webkit-scrollbar-track {
-  background: #2a2525;
+.right::-webkit-scrollbar{
+ width:10px;
 }
 
 .left::-webkit-scrollbar-thumb,
-.right::-webkit-scrollbar-thumb {
-  background: #4a4040;
-  border-radius: 8px;
-  border: 2px solid #2a2525;
+.right::-webkit-scrollbar-thumb{
+ background:#4a4040;
+ border-radius:8px;
 }
 
-.left::-webkit-scrollbar-thumb:hover,
-.right::-webkit-scrollbar-thumb:hover {
-  background: #5a4d4d;
-}
-
-.left,
-.right {
-  scrollbar-width: thin;
-  scrollbar-color: #4a4040 #2a2525;
-}
-
-.upload-label.dragover {
-  outline: 2px dashed #fbc02d;
-  outline-offset: 4px;
+.upload-label.dragover{
+ outline:2px dashed #fbc02d;
 }
 </style>
 </head>
@@ -258,329 +217,589 @@ button:active {
 
 <div class="topbar">
 
-  <label class="upload-label">
-    Old Folder:
-    <input type="file" id="oldFiles" webkitdirectory multiple>
-  </label>
+<label class="upload-label">
+Old Folder:
+<input type="file" id="oldFiles" webkitdirectory multiple>
+</label>
 
-  <label class="upload-label">
-    New Folder:
-    <input type="file" id="newFiles" webkitdirectory multiple>
-  </label>
+<label class="upload-label">
+New Folder:
+<input type="file" id="newFiles" webkitdirectory multiple>
+</label>
 
-  <button onclick="loadFiles()">Compare</button>
+<button onclick="loadFiles()">Compare</button>
 
-  <div class="spacer"></div>
+<div class="spacer"></div>
 
-  <div class="filter">
-    <button class="nav-btn" onclick="toggleFilter()">⚙</button>
+<div class="filter">
 
-    <div class="filter-menu" id="filterMenu">
-      <label><input type="checkbox" checked value="added">Added</label>
-      <label><input type="checkbox" checked value="modified">Modified</label>
-      <label><input type="checkbox" checked value="removed">Removed</label>
-      <label><input type="checkbox" checked value="unchanged">Unchanged</label>
-    </div>
-  </div>
+<button class="nav-btn" onclick="toggleFilter()">⚙</button>
 
-  <input type="text" id="searchBox" class="search-box" placeholder="Search..." oninput="runSearch()">
+<div class="filter-menu" id="filterMenu">
 
-  <button class="nav-btn" onclick="gotoMatch(currentMatch - 1)">↑</button>
-  <button class="nav-btn" onclick="gotoMatch(currentMatch + 1)">↓</button>
+<label><input checked type="checkbox" value="added">Added</label>
+<label><input checked type="checkbox" value="modified">Modified</label>
+<label><input checked type="checkbox" value="removed">Removed</label>
+<label><input checked type="checkbox" value="unchanged">Unchanged</label>
 
-  <div id="matchCounter">0 / 0</div>
+</div>
+
+</div>
+
+<input
+id="searchBox"
+class="search-box"
+placeholder="Search..."
+oninput="runSearch()"
+>
+
+<button class="nav-btn" onclick="gotoMatch(currentMatch-1)">↑</button>
+<button class="nav-btn" onclick="gotoMatch(currentMatch+1)">↓</button>
+
+<div id="matchCounter">0 / 0</div>
 
 </div>
 
 <div class="container">
-  <div class="left" id="fileList"></div>
-  <div class="right" id="viewer">Select file</div>
+
+<div class="left" id="fileList"></div>
+
+<div class="right" id="viewer">
+Select file
+</div>
+
 </div>
 
 <script>
-let oldData = {};
-let newData = {};
-let selectedName = null;
 
-let matches = [];
-let currentMatch = 0;
+let oldData={}
+let newData={}
+let selectedName=null
 
-function toggleFilter() {
-  const menu = document.getElementById("filterMenu");
-  menu.style.display = menu.style.display === "flex" ? "none" : "flex";
+let matches=[]
+let currentMatch=0
+
+function toggleFilter(){
+
+const menu=document.getElementById("filterMenu")
+
+menu.style.display=
+menu.style.display==="flex"
+?"none"
+:"flex"
+
 }
 
-document.addEventListener("click", (e) => {
-  if (!e.target.closest(".filter")) {
-    document.getElementById("filterMenu").style.display = "none";
-  }
-});
+document.addEventListener("click",(e)=>{
 
-/* ---------------- FIXED FILTER LOGIC ---------------- */
+if(!e.target.closest(".filter")){
 
-function updateVisibleFiles() {
+document.getElementById("filterMenu").style.display="none"
 
-  const search = document.getElementById("searchBox").value.trim().toLowerCase();
-
-  const allowed = [...document.querySelectorAll("#filterMenu input:checked")]
-    .map(e => e.value);
-
-  document.querySelectorAll(".file").forEach(file => {
-
-    const name = file.dataset.name;
-    const status = file.dataset.status;
-
-    const oldText = (oldData[name] || "").toLowerCase();
-    const newText = (newData[name] || "").toLowerCase();
-
-    const matchesSearch =
-      !search ||
-      oldText.includes(search) ||
-      newText.includes(search);
-
-    const matchesFilter =
-      allowed.includes(status);
-
-    file.style.display = (matchesSearch && matchesFilter) ? "" : "none";
-  });
 }
 
-function applyFilters() {
-  updateVisibleFiles();
+})
+
+function updateVisibleFiles(){
+
+const search=
+document.getElementById("searchBox")
+.value
+.trim()
+.toLowerCase()
+
+const allowed=
+[...document.querySelectorAll("#filterMenu input:checked")]
+.map(x=>x.value)
+
+document.querySelectorAll(".file")
+.forEach(file=>{
+
+const name=file.dataset.name
+const status=file.dataset.status
+
+const oldText=(oldData[name]||"").toLowerCase()
+const newText=(newData[name]||"").toLowerCase()
+
+const searchMatch=
+!search ||
+oldText.includes(search) ||
+newText.includes(search)
+
+const filterMatch=
+allowed.includes(status)
+
+file.style.display=
+(searchMatch && filterMatch)
+?""
+:"none"
+
+})
+
 }
 
-document.querySelectorAll("#filterMenu input").forEach(cb => {
-  cb.addEventListener("change", applyFilters);
-});
+function applyFilters(){
 
-document.getElementById("showOnlyChanges")
-  .addEventListener("change", () => {
-    if (selectedName) show(selectedName);
-  });
+updateVisibleFiles()
 
-/* ---------------- FILE LOGIC ---------------- */
-
-function cleanText(t) {
-  return t.replace(/\r/g, "");
 }
 
-function normalize(file) {
-  const path = file.webkitRelativePath || file.name;
-  return path.includes("/") ? path.split("/").slice(1).join("/") : path;
+document.querySelectorAll("#filterMenu input")
+.forEach(cb=>{
+
+cb.addEventListener(
+"change",
+applyFilters
+)
+
+})
+
+function cleanText(t){
+
+return t.replace(/\r/g,"")
+
 }
 
-function readFiles(files, store, cb) {
-  let done = 0;
-  if (!files.length) return cb();
+function normalize(file){
 
-  for (let f of files) {
-    const r = new FileReader();
+const path=file.webkitRelativePath || file.name
 
-    r.onload = e => {
-      store[normalize(f)] = cleanText(e.target.result);
-      done++;
-      if (done === files.length) cb();
-    };
+return path.includes("/")
+?path.split("/").slice(1).join("/")
+:path
 
-    r.readAsText(f);
-  }
 }
 
-function loadFiles() {
-  oldData = {};
-  newData = {};
-  selectedName = null;
+function readFiles(files,store,cb){
 
-  readFiles(oldFiles.files, oldData, () => {
-    readFiles(newFiles.files, newData, compare);
-  });
+let done=0
+
+if(!files.length){
+cb()
+return
 }
 
-function compare() {
-  const list = document.getElementById("fileList");
-  list.innerHTML = "";
+for(let f of files){
 
-  const all = new Set([...Object.keys(oldData), ...Object.keys(newData)]);
+const r=new FileReader()
 
-  all.forEach(name => {
+r.onload=e=>{
 
-    const o = oldData[name];
-    const n = newData[name];
+store[normalize(f)]
+=
+cleanText(e.target.result)
 
-    let status = "unchanged";
-    if (!o) status = "added";
-    else if (!n) status = "removed";
-    else if (o !== n) status = "modified";
+done++
 
-    const div = document.createElement("div");
-    div.className = "file";
-    div.dataset.name = name;
-    div.dataset.status = status;
+if(done===files.length){
 
-    div.onclick = () => show(name);
+cb()
 
-    div.innerHTML = `
-      <span>${name}</span>
-      <span class="dot ${status}"></span>
-    `;
-
-    list.appendChild(div);
-  });
-
-  runSearch();
-  applyFilters();
 }
 
-function runSearch() {
-  updateVisibleFiles();
 }
 
-/* ---------------- UPDATED SHOW FUNCTION ---------------- */
+r.readAsText(f)
 
-function show(name) {
-
-  selectedName = name;
-
-  document.querySelectorAll(".file").forEach(el => {
-    el.classList.toggle("active", el.dataset.name === name);
-  });
-
-  const a = oldData[name] || "";
-  const b = newData[name] || "";
-  const viewer = document.getElementById("viewer");
-
-  const A = a.split("\n");
-  const B = b.split("\n");
-
-  if (A.length > 5000 || B.length > 5000) {
-    viewer.innerHTML =
-      `<div>Too many lines</div>` +
-      diffBlocksLarge(A, B);
-  } else {
-    viewer.innerHTML = diffBlocks(A, B);
-  }
-
-  highlightSearch();
 }
 
-
-function diffBlocksLarge(a, b) {
-
-  const setB = new Set(b);
-  const setA = new Set(a);
-
-  let out = "";
-
-  for (let i = 0; i < a.length; i++) {
-    if (!setB.has(a[i])) {
-      out += wrap(a[i], "remove");
-    }
-  }
-
-  for (let j = 0; j < b.length; j++) {
-    if (!setA.has(b[j])) {
-      out += wrap(b[j], "add");
-    }
-  }
-
-  return out;
 }
 
-/* ---------------- ORIGINAL DIFF ---------------- */
+function loadFiles(){
 
-function diffBlocks(a, b) {
+oldData={}
+newData={}
+selectedName=null
 
-  const onlyChanges = document.getElementById("showOnlyChanges")?.checked;
+readFiles(
+oldFiles.files,
+oldData,
+()=>{
 
-  const dp = Array(a.length + 1).fill(0).map(() => Array(b.length + 1).fill(0));
+readFiles(
+newFiles.files,
+newData,
+compare
+)
 
-  for (let i = a.length - 1; i >= 0; i--) {
-    for (let j = b.length - 1; j >= 0; j--) {
-      dp[i][j] = (a[i] === b[j])
-        ? dp[i + 1][j + 1] + 1
-        : Math.max(dp[i + 1][j], dp[i][j + 1]);
-    }
-  }
-
-  let i = 0, j = 0, out = "";
-
-  while (i < a.length && j < b.length) {
-
-    if (a[i] === b[j]) {
-
-      if (!onlyChanges) {
-        out += wrap(a[i], "");
-      }
-
-      i++; j++;
-
-    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
-      out += wrap(a[i++], "remove");
-    } else {
-      out += wrap(b[j++], "add");
-    }
-  }
-
-  while (i < a.length) out += wrap(a[i++], "remove");
-  while (j < b.length) out += wrap(b[j++], "add");
-
-  return out;
 }
-function wrap(text, type) {
-  if (!text) return `<div class="block ${type}">&nbsp;</div>`;
-  return `<div class="block ${type}">${escapeHtml(text)}</div>`;
+)
+
 }
 
-function highlightSearch() {
+function compare(){
 
-  const search = document.getElementById("searchBox").value.trim();
+const list=
+document.getElementById("fileList")
 
-  matches = [];
-  currentMatch = 0;
+list.innerHTML=""
 
-  if (!search) return;
+const all=
+new Set([
+...Object.keys(oldData),
+...Object.keys(newData)
+])
 
-  const blocks = document.querySelectorAll(".block");
+all.forEach(name=>{
 
-  blocks.forEach(block => {
-    const original = block.textContent;
-    const regex = new RegExp(escapeRegExp(search), "gi");
+const o=oldData[name]
+const n=newData[name]
 
-    block.innerHTML = escapeHtml(original)
-      .replace(regex, m => `<span class="highlight">${m}</span>`);
-  });
+let status="unchanged"
 
-  matches = [...document.querySelectorAll(".highlight")];
+if(!o)
+status="added"
+else if(!n)
+status="removed"
+else if(o!==n)
+status="modified"
 
-  if (matches.length) gotoMatch(0);
+const div=document.createElement("div")
+
+div.className="file"
+
+div.dataset.name=name
+div.dataset.status=status
+
+div.onclick=()=>show(name)
+
+div.innerHTML=`
+<span>${name}</span>
+<span class="dot ${status}"></span>
+`
+
+list.appendChild(div)
+
+})
+
+runSearch()
+
+applyFilters()
+
 }
 
-function gotoMatch(index) {
+function runSearch(){
 
-  if (!matches.length) return;
+updateVisibleFiles()
 
-  matches.forEach(m => m.classList.remove("active-highlight"));
+if(selectedName){
 
-  currentMatch = (index + matches.length) % matches.length;
+show(selectedName)
 
-  const el = matches[currentMatch];
-  el.classList.add("active-highlight");
-
-  el.scrollIntoView({ behavior: "smooth", block: "center" });
-
-  document.getElementById("matchCounter").textContent =
-    `${currentMatch + 1} / ${matches.length}`;
 }
 
-function escapeRegExp(text) {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function escapeHtml(t) {
-  return t.replace(/&/g,"&amp;")
-          .replace(/</g,"&lt;")
-          .replace(/>/g,"&gt;");
+function show(name){
+
+selectedName=name
+
+document.querySelectorAll(".file")
+.forEach(el=>{
+
+el.classList.toggle(
+"active",
+el.dataset.name===name
+)
+
+})
+
+const a=(oldData[name]||"").split("\n")
+const b=(newData[name]||"").split("\n")
+
+const viewer=
+document.getElementById("viewer")
+
+if(
+a.length>5000 ||
+b.length>5000
+){
+
+viewer.innerHTML=
+diffBlocksLarge(a,b)
+
+}else{
+
+viewer.innerHTML=
+diffBlocks(a,b)
+
 }
+
+highlightSearch()
+
+}
+
+function diffBlocksLarge(a,b){
+
+const setA=new Set(a)
+const setB=new Set(b)
+
+let out=""
+
+for(let line of a){
+
+if(!setB.has(line))
+out+=wrap(line,"remove")
+
+}
+
+for(let line of b){
+
+if(!setA.has(line))
+out+=wrap(line,"add")
+
+}
+
+return out
+
+}
+
+function diffBlocks(a,b){
+
+const dp=
+Array(a.length+1)
+.fill(0)
+.map(()=>
+Array(b.length+1).fill(0)
+)
+
+for(let i=a.length-1;i>=0;i--){
+
+for(let j=b.length-1;j>=0;j--){
+
+dp[i][j]=
+(a[i]===b[j])
+?dp[i+1][j+1]+1
+:Math.max(
+dp[i+1][j],
+dp[i][j+1]
+)
+
+}
+
+}
+
+let i=0
+let j=0
+let out=""
+
+while(
+i<a.length &&
+j<b.length
+){
+
+if(a[i]===b[j]){
+
+out+=wrap(a[i],"")
+
+i++
+j++
+
+}else if(
+dp[i+1][j]>=dp[i][j+1]
+){
+
+out+=wrap(a[i++],"remove")
+
+}else{
+
+out+=wrap(b[j++],"add")
+
+}
+
+}
+
+while(i<a.length)
+out+=wrap(a[i++],"remove")
+
+while(j<b.length)
+out+=wrap(b[j++],"add")
+
+return out
+
+}
+
+function wrap(text,type){
+
+if(!text){
+
+return `<div class="block ${type}">&nbsp;</div>`
+
+}
+
+return `
+<div class="block ${type}">
+${escapeHtml(text)}
+</div>
+`
+
+}
+
+function highlightSearch(){
+
+const search=
+document.getElementById("searchBox")
+.value
+.trim()
+
+matches=[]
+currentMatch=0
+
+document
+.querySelectorAll(".block")
+.forEach(block=>{
+
+const original=
+block.textContent
+
+if(!search){
+
+block.innerHTML=
+escapeHtml(original)
+
+return
+
+}
+
+const regex=
+new RegExp(
+escapeRegExp(search),
+"gi"
+)
+
+block.innerHTML=
+escapeHtml(original)
+.replace(
+regex,
+m=>`<span class="highlight">${m}</span>`
+)
+
+})
+
+matches=
+[
+...document.querySelectorAll(".highlight")
+]
+
+if(matches.length){
+
+gotoMatch(0)
+
+}else{
+
+document.getElementById(
+"matchCounter"
+).textContent="0 / 0"
+
+}
+
+}
+
+function gotoMatch(index){
+
+if(!matches.length)
+return
+
+matches.forEach(m=>
+m.classList.remove(
+"active-highlight"
+)
+)
+
+currentMatch=
+(index+matches.length)
+%
+matches.length
+
+const el=
+matches[currentMatch]
+
+el.classList.add(
+"active-highlight"
+)
+
+el.scrollIntoView({
+
+behavior:"smooth",
+block:"center"
+
+})
+
+document.getElementById(
+"matchCounter"
+).textContent=
+`${currentMatch+1} / ${matches.length}`
+
+}
+
+function escapeRegExp(text){
+
+return text.replace(
+/[.*+?^${}()|[\]\\]/g,
+"\\$&"
+)
+
+}
+
+function escapeHtml(t){
+
+return t
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;")
+
+}
+
+/* ===========================
+   KEYBOARD NAVIGATION
+=========================== */
+
+document.addEventListener(
+"keydown",
+(e)=>{
+
+const tag=
+document.activeElement.tagName
+
+if(
+tag==="INPUT" ||
+tag==="TEXTAREA" ||
+document.activeElement.isContentEditable
+){
+
+return
+
+}
+
+if(!matches.length)
+return
+
+const key=
+e.key.toLowerCase()
+
+if(key==="j"){
+
+e.preventDefault()
+
+gotoMatch(
+currentMatch+1
+)
+
+}
+
+if(key==="k"){
+
+e.preventDefault()
+
+gotoMatch(
+currentMatch-1
+)
+
+}
+
+}
+)
+
 </script>
 
 </body>
