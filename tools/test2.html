@@ -1,1 +1,135 @@
-test 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Outfit List Maker</title>
+
+<style>
+body {
+    background: #111;
+    color: #fff;
+    font-family: "Times New Roman", serif;
+    padding: 20px;
+}
+
+button,
+input[type="file"] {
+    font-family: "Times New Roman", serif;
+    margin: 5px 0;
+}
+
+button {
+    padding: 4px 10px;
+}
+
+#output {
+    margin-top: 15px;
+    white-space: pre-line;
+}
+
+#copyStatus {
+    margin-left: 10px;
+}
+</style>
+</head>
+<body>
+
+<h2>Outfit List Maker</h2>
+
+<input type="file" id="upload" multiple>
+
+<br>
+
+<button onclick="generateList()">Generate List</button>
+<button onclick="copyList()">Copy</button>
+<span id="copyStatus"></span>
+
+<div id="output"></div>
+
+<script>
+const orderedIDs = [
+    "H","D","C","T","PP","S","BB",
+    "AHE","AHC","AEA","ANE","AHA","AXQ",
+    "G","AGL","AFA","AXS","ALE","AXK",
+    "ABS","AJZ","ARM","ABA","ABK"
+];
+
+const idMap = {
+    "H":"Hair",
+    "D":"Dress",
+    "C":"Outerwear",
+    "T":"Top",
+    "PP":"Bottom",
+    "S":"Socks",
+    "BB":"Shoes",
+    "AHE":"Hair Accessory",
+    "AHC":"Headwear",
+    "AEA":"Earrings",
+    "ANE":"Neckwear",
+    "AHA":"Bracelet",
+    "AXQ":"Choker",
+    "G":"Gloves",
+    "AGL":"Face Decoration",
+    "AFA":"Face Decoration",
+    "AXS":"Chest Accessory",
+    "ALE":"Pendant",
+    "AXK":"Pendant",
+    "ABS":"Backpiece",
+    "AJZ":"Rings",
+    "ARM":"Arm Decoration",
+    "ABA":"Handheld",
+    "ABK":"Body Paint"
+};
+
+function generateList() {
+    const files = document.getElementById("upload").files;
+
+    if (!files.length) {
+        alert("Select some files first.");
+        return;
+    }
+
+    const foundIDs = [];
+
+    for (const file of files) {
+        const name = file.name.toUpperCase();
+
+        const match = name.match(/S\d+([A-Z]+)/);
+
+        if (match) {
+            const id = match[1];
+
+            if (
+                orderedIDs.includes(id) &&
+                !foundIDs.includes(id)
+            ) {
+                foundIDs.push(id);
+            }
+        }
+    }
+
+    const result = orderedIDs
+        .filter(id => foundIDs.includes(id))
+        .map(id => "• " + idMap[id]);
+
+    document.getElementById("output").textContent =
+        result.join("\n");
+}
+
+function copyList() {
+    const text = document.getElementById("output").textContent;
+
+    if (!text.trim()) return;
+
+    navigator.clipboard.writeText(text).then(() => {
+        const status = document.getElementById("copyStatus");
+        status.textContent = "Copied!";
+        setTimeout(() => {
+            status.textContent = "";
+        }, 1200);
+    });
+}
+</script>
+
+</body>
+</html>
