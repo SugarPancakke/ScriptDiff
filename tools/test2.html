@@ -1,4 +1,52 @@
-<body style="background:#111; color:white; font-family:'Times New Roman',serif;">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Outfit List Maker</title>
+
+<style>
+body {
+    background: #111;
+    color: white;
+    font-family: "Times New Roman", serif;
+    padding: 20px;
+}
+
+textarea {
+    width: 600px;
+    height: 200px;
+    background: #222;
+    color: white;
+    font-family: "Times New Roman", serif;
+    border: 1px solid #444;
+}
+
+button {
+    font-family: "Times New Roman", serif;
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+#output {
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px solid #444;
+    background: #1a1a1a;
+}
+
+#output ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+#output li {
+    color: white;
+    margin-bottom: 4px;
+}
+</style>
+</head>
+
+<body>
 
 <h2>Outfit List Maker</h2>
 
@@ -7,28 +55,15 @@
 <br><br>
 
 <textarea id="filenameInput"
-placeholder="Paste file names here (one per line)..."
-style="
-width:600px;
-height:200px;
-background:#222;
-color:white;
-font-family:'Times New Roman',serif;
-border:1px solid #444;
-"></textarea>
+placeholder="Paste file names here (one per line)..."></textarea>
 
-<br>
+<br><br>
 
 <button onclick="generateList()">Generate List</button>
 <button onclick="copyList()">Copy</button>
 <span id="copyStatus"></span>
 
-<div id="output" style="
-margin-top:20px;
-white-space:pre-line;
-color:white;
-font-size:18px;
-"></div>
+<div id="output"></div>
 
 <script>
 const orderedIDs = [
@@ -67,13 +102,13 @@ const idMap = {
 
 function extractID(name) {
     const match = name.toUpperCase().match(/S\d+([A-Z]+)/);
-    if (match) return match[1];
-    return null;
+    return match ? match[1] : null;
 }
 
 function generateList() {
     const foundIDs = [];
 
+    // FILE INPUT
     const files = document.getElementById("upload").files;
 
     for (const file of files) {
@@ -84,6 +119,7 @@ function generateList() {
         }
     }
 
+    // TEXT INPUT
     const text = document.getElementById("filenameInput").value;
 
     const lines = text
@@ -99,15 +135,18 @@ function generateList() {
         }
     }
 
-    const result = orderedIDs
+    // BUILD LIST
+    const htmlList = orderedIDs
         .filter(id => foundIDs.includes(id))
-        .map(id => "• " + idMap[id]);
+        .map(id => `<li>${idMap[id]}</li>`)
+        .join("");
 
-    document.getElementById("output").textContent = result.join("\n");
+    document.getElementById("output").innerHTML =
+        `<ul>${htmlList}</ul>`;
 }
 
 function copyList() {
-    const text = document.getElementById("output").textContent;
+    const text = document.getElementById("output").innerText;
 
     if (!text.trim()) return;
 
@@ -120,3 +159,4 @@ function copyList() {
 </script>
 
 </body>
+</html>
