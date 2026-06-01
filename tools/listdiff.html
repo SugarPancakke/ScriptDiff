@@ -194,14 +194,13 @@ function compareLists() {
     .split("\n")
     .map(x => x.trim())
     .filter(x => x !== "");
+  
+  const set1 = new Set(list1); 
+  const set2 = new Set(list2); 
 
-  const set1 = new Set(list1); // current
-  const set2 = new Set(list2); // previous
-
-  const added = list1.filter(id => !set2.has(id));
-
-  const overlap = list1.filter(id => set2.has(id));
-
+  const added = list2.filter(id => !set1.has(id));   
+  const overlap = list2.filter(id => set1.has(id)); 
+  
   const addedList = document.getElementById("added");
   const overlapList = document.getElementById("overlap");
 
