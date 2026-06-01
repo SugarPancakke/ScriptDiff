@@ -1,42 +1,20 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Outfit List Maker</title>
-
-<style>
-body {
-    background: #111;
-    color: #fff;
-    font-family: "Times New Roman", serif;
-    padding: 20px;
-}
-
-button,
-input[type="file"] {
-    font-family: "Times New Roman", serif;
-    margin: 5px 0;
-}
-
-button {
-    padding: 4px 10px;
-}
-
-#output {
-    margin-top: 15px;
-    white-space: pre-line;
-}
-
-#copyStatus {
-    margin-left: 10px;
-}
-</style>
-</head>
 <body>
 
 <h2>Outfit List Maker</h2>
 
 <input type="file" id="upload" multiple>
+
+<br><br>
+
+<textarea id="filenameInput"
+placeholder="Paste file names here (one per line)..."
+style="
+width:600px;
+height:200px;
+background:#222;
+color:white;
+font-family:'Times New Roman',serif;
+"></textarea>
 
 <br>
 
@@ -81,30 +59,53 @@ const idMap = {
     "ABK":"Body Paint"
 };
 
-function generateList() {
-    const files = document.getElementById("upload").files;
+function extractID(name) {
+    const match = name.toUpperCase().match(/S\d+([A-Z]+)/);
 
-    if (!files.length) {
-        alert("Select some files first.");
-        return;
+    if (match) {
+        return match[1];
     }
 
+    return null;
+}
+
+function generateList() {
     const foundIDs = [];
 
+    // FILES
+    const files = document.getElementById("upload").files;
+
     for (const file of files) {
-        const name = file.name.toUpperCase();
+        const id = extractID(file.name);
 
-        const match = name.match(/S\d+([A-Z]+)/);
+        if (
+            id &&
+            orderedIDs.includes(id) &&
+            !foundIDs.includes(id)
+        ) {
+            foundIDs.push(id);
+        }
+    }
 
-        if (match) {
-            const id = match[1];
+    // PASTED FILENAMES
+    const text = document
+        .getElementById("filenameInput")
+        .value;
 
-            if (
-                orderedIDs.includes(id) &&
-                !foundIDs.includes(id)
-            ) {
-                foundIDs.push(id);
-            }
+    const lines = text
+        .split(/\r?\n/)
+        .map(x => x.trim())
+        .filter(Boolean);
+
+    for (const line of lines) {
+        const id = extractID(line);
+
+        if (
+            id &&
+            orderedIDs.includes(id) &&
+            !foundIDs.includes(id)
+        ) {
+            foundIDs.push(id);
         }
     }
 
@@ -132,4 +133,3 @@ function copyList() {
 </script>
 
 </body>
-</html>
