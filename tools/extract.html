@@ -144,41 +144,19 @@ function extractIDs() {
 
   const text = document.getElementById("input").value;
 
-  const ids = [];
+  // Match S or SL followed by 4 digits
+  const matches = text.match(/SL?\d{4}/g) || [];
 
-  // Extract IDs from clothing asset filenames
-  // Examples:
-  // T_showpic_clothes_PABA0003.uasset
-  // T_Icon_clothes_PAHC0076.uasset
-  // T_Icon_clothes_PABA0027R1.uasset
-  // T_showpic_clothes_PABAR10027.uasset
-  for (const match of text.matchAll(
-    /(?:T_(?:showpic|Icon)_clothes_)([A-Z0-9]+?)(?=_LV\d+|\.uasset)/gi
-  )) {
-    ids.push(match[1]);
-  }
+  // Remove duplicates
+  const unique = [...new Set(matches)];
 
-  // Original S0001 / SL0001 support
-  ids.push(...(text.match(/\bSL?\d{4}\b/g) || []));
-
-  // Generic fallback:
-  // catches standalone IDs pasted directly
-  ids.push(...(
-    text.match(
-      /\b(?:P[A-Z]{1,10}\d{4,10}(?:R\d+)?|SL\d{4}[A-Z]+)\b/g
-    ) || []
-  ));
-
-  // Remove duplicates while preserving order
-  const unique = [...new Set(ids)];
-
+  // Show results
   document.getElementById("output").textContent =
     unique.join("\n");
 }
 
 function copyOutput() {
-  const outputText =
-    document.getElementById("output").textContent;
+  const outputText = document.getElementById("output").textContent;
 
   if (!outputText.trim()) return;
 
