@@ -1,4 +1,4 @@
-<body>
+<body style="background:#111; color:white; font-family:'Times New Roman',serif;">
 
 <h2>Outfit List Maker</h2>
 
@@ -14,6 +14,7 @@ height:200px;
 background:#222;
 color:white;
 font-family:'Times New Roman',serif;
+border:1px solid #444;
 "></textarea>
 
 <br>
@@ -22,7 +23,12 @@ font-family:'Times New Roman',serif;
 <button onclick="copyList()">Copy</button>
 <span id="copyStatus"></span>
 
-<div id="output"></div>
+<div id="output" style="
+margin-top:20px;
+white-space:pre-line;
+color:white;
+font-size:18px;
+"></div>
 
 <script>
 const orderedIDs = [
@@ -61,36 +67,24 @@ const idMap = {
 
 function extractID(name) {
     const match = name.toUpperCase().match(/S\d+([A-Z]+)/);
-
-    if (match) {
-        return match[1];
-    }
-
+    if (match) return match[1];
     return null;
 }
 
 function generateList() {
     const foundIDs = [];
 
-    // FILES
     const files = document.getElementById("upload").files;
 
     for (const file of files) {
         const id = extractID(file.name);
 
-        if (
-            id &&
-            orderedIDs.includes(id) &&
-            !foundIDs.includes(id)
-        ) {
+        if (id && orderedIDs.includes(id) && !foundIDs.includes(id)) {
             foundIDs.push(id);
         }
     }
 
-    // PASTED FILENAMES
-    const text = document
-        .getElementById("filenameInput")
-        .value;
+    const text = document.getElementById("filenameInput").value;
 
     const lines = text
         .split(/\r?\n/)
@@ -100,11 +94,7 @@ function generateList() {
     for (const line of lines) {
         const id = extractID(line);
 
-        if (
-            id &&
-            orderedIDs.includes(id) &&
-            !foundIDs.includes(id)
-        ) {
+        if (id && orderedIDs.includes(id) && !foundIDs.includes(id)) {
             foundIDs.push(id);
         }
     }
@@ -113,8 +103,7 @@ function generateList() {
         .filter(id => foundIDs.includes(id))
         .map(id => "• " + idMap[id]);
 
-    document.getElementById("output").textContent =
-        result.join("\n");
+    document.getElementById("output").textContent = result.join("\n");
 }
 
 function copyList() {
@@ -125,9 +114,7 @@ function copyList() {
     navigator.clipboard.writeText(text).then(() => {
         const status = document.getElementById("copyStatus");
         status.textContent = "Copied!";
-        setTimeout(() => {
-            status.textContent = "";
-        }, 1200);
+        setTimeout(() => status.textContent = "", 1200);
     });
 }
 </script>
