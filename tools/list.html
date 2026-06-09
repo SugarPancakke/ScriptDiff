@@ -15,49 +15,45 @@ body {
 }
 
 .wrapper {
-  width: 420px;
+  width: 95%;
+  max-width: 800px;
   margin-top: 40px;
 }
 
 h2 {
   text-align: center;
   font-weight: normal;
-  font-size: 18px;
-  margin-bottom: 12px;
+  margin-bottom: 15px;
 }
 
-/* RESERVED GAP (replaces removed upload) */
-.gap {
-  height: 18px;
-}
-
+/* TEXT INPUT */
 textarea {
   width: 100%;
-  height: 140px;
+  height: 320px;
   background: #3d3838;
   color: white;
   border: none;
-  padding: 8px;
+  padding: 10px;
   box-sizing: border-box;
   font-family: monospace;
-  font-size: 13px;
+  font-size: 14px;
   resize: none;
 }
 
+/* BUTTONS */
 .buttons {
   display: flex;
-  gap: 8px;
-  margin: 10px 0;
+  gap: 10px;
+  margin: 20px 0;
 }
 
 button {
-  flex: 1;
   background: #4d4747;
   color: white;
   border: none;
-  padding: 10px;
+  padding: 12px 30px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 16px;
   font-family: monospace;
 }
 
@@ -66,27 +62,28 @@ button:hover {
 }
 
 #copyStatus {
-  font-size: 12px;
+  font-size: 14px;
   color: #ccc;
-  margin-left: 6px;
+  margin-left: 10px;
 }
 
-/* OUTPUT */
+/* OUTPUT (same style as diff tool viewer) */
 #output {
   background: #3d3838;
-  padding: 8px;
-  min-height: 120px;
-  font-family: monospace;
-  font-size: 13px;
-  overflow-x: auto;
+  padding: 10px;
+  min-height: 200px;
   white-space: pre-wrap;
+  font-family: monospace;
+  overflow-x: auto;
+  box-sizing: border-box;
+  font-size: 14px;
 }
 
-/* SCROLLBAR */
+/* SCROLLBARS (MATCH ALL TOOLS) */
 textarea::-webkit-scrollbar,
 #output::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 textarea::-webkit-scrollbar-track,
@@ -98,6 +95,7 @@ textarea::-webkit-scrollbar-thumb,
 #output::-webkit-scrollbar-thumb {
   background: #4a4040;
   border-radius: 8px;
+  border: 2px solid #2a2525;
 }
 
 textarea::-webkit-scrollbar-thumb:hover,
@@ -118,9 +116,6 @@ textarea,
 <div class="wrapper">
 
   <h2>Outfit List Maker</h2>
-
-  <!-- GAP (replaces removed upload button) -->
-  <div class="gap"></div>
 
   <textarea id="filenameInput"
   placeholder="Paste file names (one per line)..."></textarea>
@@ -189,7 +184,7 @@ function copyList() {
 
   const s = document.getElementById("copyStatus");
   s.textContent = "Copied!";
-  setTimeout(() => s.textContent = "", 1000);
+  setTimeout(() => s.textContent = "", 1200);
 }
 </script>
 
