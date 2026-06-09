@@ -2,233 +2,107 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Outfit List Maker</title>
+<title>Compare and Contrast</title>
 
 <style>
 body {
   margin: 0;
   background: #322d2d;
   color: white;
+  font-family: monospace;
+
   display: flex;
-  justify-content: center;
-  font-family: monospace;
+  height: 100vh;
+  overflow: hidden;
 }
 
-.wrapper {
-  width: 420px;
-  margin-top: 40px;
-}
-
-h2 {
-  text-align: center;
-  font-weight: normal;
-  font-size: 18px;
-  margin-bottom: 12px;
-}
-
-/* GAP */
-.gap {
-  height: 18px;
-}
-
-/* FILE INPUT (kept but styled minimally to match theme) */
-input[type="file"] {
-  width: 100%;
-  color: white;
-  font-family: monospace;
-}
-
-/* TEXTAREA */
-textarea {
-  width: 100%;
-  height: 140px;
-  background: #3d3838;
-  color: white;
-  border: none;
-  padding: 8px;
+/* SIDEBAR (matching wrapper style) */
+.sidebar {
+  width: 200px;
+  background: #2a2525;
+  padding: 20px;
   box-sizing: border-box;
-  font-family: monospace;
-  font-size: 13px;
-  resize: none;
-}
 
-/* BUTTONS */
-.buttons {
   display: flex;
-  gap: 8px;
-  margin: 10px 0;
+  flex-direction: column;
+  gap: 25px;
+
+  border-right: 1px solid #444;
 }
 
-button {
-  flex: 1;
+/* GROUPS */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* BUTTONS (matching your Text Cleaner buttons) */
+.tab {
   background: #4d4747;
-  color: white;
-  border: none;
-  padding: 10px;
+  padding: 12px 14px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 13px;
+  transition: 0.15s ease;
+  user-select: none;
+
+  border: 1px solid #555;
   font-family: monospace;
 }
 
-button:hover {
+.tab:hover {
   background: #5a5454;
 }
 
-#copyStatus {
-  font-size: 12px;
-  color: #ccc;
-  margin-left: 6px;
+/* CONTENT AREA */
+.content {
+  flex: 1;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  display: flex;
 }
 
-/* OUTPUT */
-#output {
-  background: #3d3838;
-  padding: 8px;
-  min-height: 120px;
-  font-family: monospace;
-  font-size: 13px;
-  overflow-x: auto;
-  white-space: pre-wrap;
-}
-
-/* SCROLLBAR */
-textarea::-webkit-scrollbar,
-#output::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-textarea::-webkit-scrollbar-track,
-#output::-webkit-scrollbar-track {
-  background: #2a2525;
-}
-
-textarea::-webkit-scrollbar-thumb,
-#output::-webkit-scrollbar-thumb {
-  background: #4a4040;
-  border-radius: 8px;
-}
-
-textarea::-webkit-scrollbar-thumb:hover,
-#output::-webkit-scrollbar-thumb:hover {
-  background: #5a4d4d;
-}
-
-textarea,
-#output {
-  scrollbar-width: thin;
-  scrollbar-color: #4a4040 #2a2525;
+/* IFRAME FULL AREA */
+iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+  background: #322d2d;
 }
 </style>
+
 </head>
 
 <body>
 
-<div class="wrapper">
+<div class="sidebar">
 
-  <h2>Outfit List Maker</h2>
-
-  <input type="file" id="upload" multiple>
-
-  <div class="gap"></div>
-
-  <textarea id="filenameInput"
-  placeholder="Paste file names (one per line)..."></textarea>
-
-  <div class="buttons">
-    <button onclick="generateList()">Generate List</button>
-    <button onclick="copyList()">Copy</button>
-    <span id="copyStatus"></span>
+  <div class="group">
+    <div class="tab" onclick="loadTool('clean.html')">Clean</div>
+    <div class="tab" onclick="loadTool('diff.html')">Diff</div>
   </div>
 
-  <div id="output"></div>
+  <div class="group">
+    <div class="tab" onclick="loadTool('extract.html')">ID Extractor</div>
+    <div class="tab" onclick="loadTool('listdiff.html')">List Diff</div>
+  </div>
+
+  <div class="group">
+    <div class="tab" onclick="loadTool('list.html')">List Maker</div>
+    <div class="tab" onclick="loadTool('cleanCN.html')">Clean /w Chinese</div>
+  </div>
 
 </div>
 
+<div class="content">
+  <iframe id="toolFrame" src="tools/clean.html"></iframe>
+</div>
+
 <script>
-const orderedIDs = [
-  "H","D","C","T","PP","S","BB",
-  "AHE","AHC","AEA","ANE","AHA","AXQ",
-  "G","AGL","AFA","AXS","ALE","AXK",
-  "ABS","AJZ","ARM","ABA","ABK"
-];
-
-const idMap = {
-  "H":"Hair",
-  "D":"Dress",
-  "C":"Outerwear",
-  "T":"Top",
-  "PP":"Bottom",
-  "S":"Socks",
-  "BB":"Shoes",
-  "AHE":"Hair Accessory",
-  "AHC":"Headwear",
-  "AEA":"Earrings",
-  "ANE":"Neckwear",
-  "AHA":"Bracelet",
-  "AXQ":"Choker",
-  "G":"Gloves",
-  "AGL":"Face Decoration",
-  "AFA":"Face Decoration",
-  "AXS":"Chest Accessory",
-  "ALE":"Pendant",
-  "AXK":"Pendant",
-  "ABS":"Backpiece",
-  "AJZ":"Rings",
-  "ARM":"Arm Decoration",
-  "ABA":"Handheld",
-  "ABK":"Body Paint"
-};
-
-function extractID(name) {
-  const match = name.toUpperCase().match(/S\d+([A-Z]+)/);
-  return match ? match[1] : null;
-}
-
-function generateList() {
-  const foundIDs = [];
-
-  // FILE INPUT
-  const files = document.getElementById("upload").files;
-
-  for (const file of files) {
-    const id = extractID(file.name);
-    if (id && orderedIDs.includes(id) && !foundIDs.includes(id)) {
-      foundIDs.push(id);
-    }
-  }
-
-  // TEXT INPUT
-  const lines = document.getElementById("filenameInput").value
-    .split(/\r?\n/)
-    .map(x => x.trim())
-    .filter(Boolean);
-
-  for (const line of lines) {
-    const id = extractID(line);
-    if (id && orderedIDs.includes(id) && !foundIDs.includes(id)) {
-      foundIDs.push(id);
-    }
-  }
-
-  // OUTPUT
-  const htmlList = orderedIDs
-    .filter(id => foundIDs.includes(id))
-    .map(id => `• ${idMap[id]}`)
-    .join("\n");
-
-  document.getElementById("output").textContent = htmlList;
-}
-
-function copyList() {
-  const text = document.getElementById("output").textContent;
-  if (!text.trim()) return;
-
-  navigator.clipboard.writeText(text);
-
-  const s = document.getElementById("copyStatus");
-  s.textContent = "Copied!";
-  setTimeout(() => s.textContent = "", 1000);
+function loadTool(page) {
+  document.getElementById("toolFrame").src = "tools/" + page;
 }
 </script>
 
