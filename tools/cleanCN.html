@@ -133,10 +133,6 @@ function setStatus(text) {
   document.getElementById("status").textContent = text;
 }
 
-/* =========================
-   IMPROVED PYTHON-LIKE CLEANER
-   (CHINESE PRESERVED)
-========================= */
 function cleanText(text) {
 
   /* 1. Specific corrupted UTF-8 clusters */
@@ -275,7 +271,7 @@ async function downloadZip() {
 
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "cleaned_files.zip";
+  a.download = "cleaned_files_cn.zip";
   a.click();
 
   setStatus("ZIP downloaded.");
