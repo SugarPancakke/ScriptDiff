@@ -26,15 +26,11 @@ h2 {
   margin-bottom: 12px;
 }
 
-/* FILE INPUT — NO BOX STYLING */
-input[type="file"] {
-  color: white;
-  font-family: monospace;
-  font-size: 13px;
-  margin-bottom: 10px;
+/* RESERVED GAP (replaces removed upload) */
+.gap {
+  height: 18px;
 }
 
-/* TEXTAREA */
 textarea {
   width: 100%;
   height: 140px;
@@ -48,7 +44,6 @@ textarea {
   resize: none;
 }
 
-/* BUTTONS */
 .buttons {
   display: flex;
   gap: 8px;
@@ -81,22 +76,13 @@ button:hover {
   background: #3d3838;
   padding: 8px;
   min-height: 120px;
-  white-space: pre-wrap;
   font-family: monospace;
   font-size: 13px;
   overflow-x: auto;
+  white-space: pre-wrap;
 }
 
-#output ul {
-  margin: 0;
-  padding-left: 18px;
-}
-
-#output li {
-  margin-bottom: 3px;
-}
-
-/* SCROLLBAR (MATCH OTHER TOOLS) */
+/* SCROLLBAR */
 textarea::-webkit-scrollbar,
 #output::-webkit-scrollbar {
   width: 8px;
@@ -133,7 +119,8 @@ textarea,
 
   <h2>Outfit List Maker</h2>
 
-  <input type="file" id="upload" multiple>
+  <!-- GAP (replaces removed upload button) -->
+  <div class="gap"></div>
 
   <textarea id="filenameInput"
   placeholder="Paste file names (one per line)..."></textarea>
@@ -174,13 +161,6 @@ function extractID(name) {
 function generateList() {
   const foundIDs = [];
 
-  for (const file of document.getElementById("upload").files) {
-    const id = extractID(file.name);
-    if (id && orderedIDs.includes(id) && !foundIDs.includes(id)) {
-      foundIDs.push(id);
-    }
-  }
-
   const lines = document.getElementById("filenameInput").value
     .split(/\r?\n/)
     .map(x => x.trim())
@@ -193,17 +173,16 @@ function generateList() {
     }
   }
 
-  document.getElementById("output").innerHTML =
-    "<ul>" +
-    orderedIDs
-      .filter(id => foundIDs.includes(id))
-      .map(id => `<li>${idMap[id]}</li>`)
-      .join("") +
-    "</ul>";
+  const formatted = orderedIDs
+    .filter(id => foundIDs.includes(id))
+    .map(id => `• ${idMap[id]}`)
+    .join("\n");
+
+  document.getElementById("output").textContent = formatted;
 }
 
 function copyList() {
-  const text = document.getElementById("output").innerText;
+  const text = document.getElementById("output").textContent;
   if (!text.trim()) return;
 
   navigator.clipboard.writeText(text);
