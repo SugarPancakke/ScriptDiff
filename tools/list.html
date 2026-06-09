@@ -5,123 +5,125 @@
 <title>Outfit List Maker</title>
 
 <style>
-  body {
-    margin: 0;
-    background: #322d2d;
-    color: white;
-    display: flex;
-    justify-content: center;
-    font-family: monospace;
-  }
+body {
+  margin: 0;
+  background: #322d2d;
+  color: white;
+  display: flex;
+  justify-content: center;
+  font-family: monospace;
+}
 
-  .wrapper {
-    width: 95%;
-    max-width: 900px;
-    margin-top: 40px;
-  }
+.wrapper {
+  width: 420px;
+  margin-top: 40px;
+}
 
-  h2 {
-    text-align: center;
-    font-weight: normal;
-  }
+h2 {
+  text-align: center;
+  font-weight: normal;
+  font-size: 18px;
+  margin-bottom: 12px;
+}
 
-  input[type="file"] {
-    background: #3d3838;
-    color: white;
-    border: none;
-    padding: 10px;
-    width: 100%;
-    box-sizing: border-box;
-    font-family: monospace;
-  }
+/* FILE INPUT — NO BOX STYLING */
+input[type="file"] {
+  color: white;
+  font-family: monospace;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
 
-  textarea {
-    width: 100%;
-    height: 220px;
-    background: #3d3838;
-    color: white;
-    border: none;
-    padding: 10px;
-    box-sizing: border-box;
-    font-family: monospace;
-    font-size: 14px;
-    resize: none;
-  }
+/* TEXTAREA */
+textarea {
+  width: 100%;
+  height: 140px;
+  background: #3d3838;
+  color: white;
+  border: none;
+  padding: 8px;
+  box-sizing: border-box;
+  font-family: monospace;
+  font-size: 13px;
+  resize: none;
+}
 
-  .buttons {
-    display: flex;
-    gap: 10px;
-    margin: 20px 0;
-  }
+/* BUTTONS */
+.buttons {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0;
+}
 
-  button {
-    background: #4d4747;
-    color: white;
-    border: none;
-    padding: 12px 30px;
-    cursor: pointer;
-    font-size: 16px;
-    font-family: monospace;
-  }
+button {
+  flex: 1;
+  background: #4d4747;
+  color: white;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: monospace;
+}
 
-  button:hover {
-    background: #5a5454;
-  }
+button:hover {
+  background: #5a5454;
+}
 
-  #copyStatus {
-    margin-left: 10px;
-    color: #ccc;
-    font-size: 14px;
-  }
+#copyStatus {
+  font-size: 12px;
+  color: #ccc;
+  margin-left: 6px;
+}
 
-  #output {
-    background: #3d3838;
-    padding: 10px;
-    min-height: 200px;
-    white-space: pre-wrap;
-    font-family: monospace;
-    overflow-x: auto;
-    box-sizing: border-box;
-  }
+/* OUTPUT */
+#output {
+  background: #3d3838;
+  padding: 8px;
+  min-height: 120px;
+  white-space: pre-wrap;
+  font-family: monospace;
+  font-size: 13px;
+  overflow-x: auto;
+}
 
-  #output ul {
-    margin: 0;
-    padding-left: 20px;
-  }
+#output ul {
+  margin: 0;
+  padding-left: 18px;
+}
 
-  #output li {
-    margin-bottom: 4px;
-  }
+#output li {
+  margin-bottom: 3px;
+}
 
-  /* DARK SCROLLBAR (MATCH OTHER SCRIPTS) */
-  textarea::-webkit-scrollbar,
-  #output::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
+/* SCROLLBAR (MATCH OTHER TOOLS) */
+textarea::-webkit-scrollbar,
+#output::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
 
-  textarea::-webkit-scrollbar-track,
-  #output::-webkit-scrollbar-track {
-    background: #2a2525;
-  }
+textarea::-webkit-scrollbar-track,
+#output::-webkit-scrollbar-track {
+  background: #2a2525;
+}
 
-  textarea::-webkit-scrollbar-thumb,
-  #output::-webkit-scrollbar-thumb {
-    background: #4a4040;
-    border-radius: 8px;
-    border: 2px solid #2a2525;
-  }
+textarea::-webkit-scrollbar-thumb,
+#output::-webkit-scrollbar-thumb {
+  background: #4a4040;
+  border-radius: 8px;
+}
 
-  textarea::-webkit-scrollbar-thumb:hover,
-  #output::-webkit-scrollbar-thumb:hover {
-    background: #5a4d4d;
-  }
+textarea::-webkit-scrollbar-thumb:hover,
+#output::-webkit-scrollbar-thumb:hover {
+  background: #5a4d4d;
+}
 
-  textarea,
-  #output {
-    scrollbar-width: thin;
-    scrollbar-color: #4a4040 #2a2525;
-  }
+textarea,
+#output {
+  scrollbar-width: thin;
+  scrollbar-color: #4a4040 #2a2525;
+}
 </style>
 </head>
 
@@ -133,10 +135,8 @@
 
   <input type="file" id="upload" multiple>
 
-  <br><br>
-
   <textarea id="filenameInput"
-  placeholder="Paste file names here (one per line)..."></textarea>
+  placeholder="Paste file names (one per line)..."></textarea>
 
   <div class="buttons">
     <button onclick="generateList()">Generate</button>
@@ -150,89 +150,67 @@
 
 <script>
 const orderedIDs = [
-    "H","D","C","T","PP","S","BB",
-    "AHE","AHC","AEA","ANE","AHA","AXQ",
-    "G","AGL","AFA","AXS","ALE","AXK",
-    "ABS","AJZ","ARM","ABA","ABK"
+  "H","D","C","T","PP","S","BB",
+  "AHE","AHC","AEA","ANE","AHA","AXQ",
+  "G","AGL","AFA","AXS","ALE","AXK",
+  "ABS","AJZ","ARM","ABA","ABK"
 ];
 
 const idMap = {
-    "H":"Hair",
-    "D":"Dress",
-    "C":"Outerwear",
-    "T":"Top",
-    "PP":"Bottom",
-    "S":"Socks",
-    "BB":"Shoes",
-    "AHE":"Hair Accessory",
-    "AHC":"Headwear",
-    "AEA":"Earrings",
-    "ANE":"Neckwear",
-    "AHA":"Bracelet",
-    "AXQ":"Choker",
-    "G":"Gloves",
-    "AGL":"Face Decoration",
-    "AFA":"Face Decoration",
-    "AXS":"Chest Accessory",
-    "ALE":"Pendant",
-    "AXK":"Pendant",
-    "ABS":"Backpiece",
-    "AJZ":"Rings",
-    "ARM":"Arm Decoration",
-    "ABA":"Handheld",
-    "ABK":"Body Paint"
+  "H":"Hair","D":"Dress","C":"Outerwear","T":"Top","PP":"Bottom",
+  "S":"Socks","BB":"Shoes","AHE":"Hair Accessory","AHC":"Headwear",
+  "AEA":"Earrings","ANE":"Neckwear","AHA":"Bracelet","AXQ":"Choker",
+  "G":"Gloves","AGL":"Face Decoration","AFA":"Face Decoration",
+  "AXS":"Chest Accessory","ALE":"Pendant","AXK":"Pendant",
+  "ABS":"Backpiece","AJZ":"Rings","ARM":"Arm Decoration",
+  "ABA":"Handheld","ABK":"Body Paint"
 };
 
 function extractID(name) {
-    const match = name.toUpperCase().match(/S\d+([A-Z]+)/);
-    return match ? match[1] : null;
+  const match = name.toUpperCase().match(/S\d+([A-Z]+)/);
+  return match ? match[1] : null;
 }
 
 function generateList() {
-    const foundIDs = [];
+  const foundIDs = [];
 
-    const files = document.getElementById("upload").files;
-
-    for (const file of files) {
-        const id = extractID(file.name);
-        if (id && orderedIDs.includes(id) && !foundIDs.includes(id)) {
-            foundIDs.push(id);
-        }
+  for (const file of document.getElementById("upload").files) {
+    const id = extractID(file.name);
+    if (id && orderedIDs.includes(id) && !foundIDs.includes(id)) {
+      foundIDs.push(id);
     }
+  }
 
-    const text = document.getElementById("filenameInput").value;
+  const lines = document.getElementById("filenameInput").value
+    .split(/\r?\n/)
+    .map(x => x.trim())
+    .filter(Boolean);
 
-    const lines = text
-        .split(/\r?\n/)
-        .map(x => x.trim())
-        .filter(Boolean);
-
-    for (const line of lines) {
-        const id = extractID(line);
-        if (id && orderedIDs.includes(id) && !foundIDs.includes(id)) {
-            foundIDs.push(id);
-        }
+  for (const line of lines) {
+    const id = extractID(line);
+    if (id && orderedIDs.includes(id) && !foundIDs.includes(id)) {
+      foundIDs.push(id);
     }
+  }
 
-    const htmlList = orderedIDs
-        .filter(id => foundIDs.includes(id))
-        .map(id => `<li>${idMap[id]}</li>`)
-        .join("");
-
-    document.getElementById("output").innerHTML =
-        `<ul>${htmlList}</ul>`;
+  document.getElementById("output").innerHTML =
+    "<ul>" +
+    orderedIDs
+      .filter(id => foundIDs.includes(id))
+      .map(id => `<li>${idMap[id]}</li>`)
+      .join("") +
+    "</ul>";
 }
 
 function copyList() {
-    const text = document.getElementById("output").innerText;
+  const text = document.getElementById("output").innerText;
+  if (!text.trim()) return;
 
-    if (!text.trim()) return;
+  navigator.clipboard.writeText(text);
 
-    navigator.clipboard.writeText(text).then(() => {
-        const status = document.getElementById("copyStatus");
-        status.textContent = "Copied!";
-        setTimeout(() => status.textContent = "", 1200);
-    });
+  const s = document.getElementById("copyStatus");
+  s.textContent = "Copied!";
+  setTimeout(() => s.textContent = "", 1000);
 }
 </script>
 
