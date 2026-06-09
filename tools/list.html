@@ -5,65 +5,148 @@
 <title>Outfit List Maker</title>
 
 <style>
-body {
-    background: #111;
+  body {
+    margin: 0;
+    background: #322d2d;
     color: white;
-    font-family: "Times New Roman", serif;
-    padding: 20px;
-}
+    display: flex;
+    justify-content: center;
+    font-family: monospace;
+  }
 
-textarea {
-    width: 600px;
-    height: 200px;
-    background: #222;
+  .wrapper {
+    width: 95%;
+    max-width: 900px;
+    margin-top: 40px;
+  }
+
+  h2 {
+    text-align: center;
+    font-weight: normal;
+  }
+
+  input[type="file"] {
+    background: #3d3838;
     color: white;
-    font-family: "Times New Roman", serif;
-    border: 1px solid #444;
-}
-
-button {
-    font-family: "Times New Roman", serif;
-    margin-right: 10px;
-    cursor: pointer;
-}
-
-#output {
-    margin-top: 20px;
+    border: none;
     padding: 10px;
-    border: 1px solid #444;
-    background: #1a1a1a;
-}
+    width: 100%;
+    box-sizing: border-box;
+    font-family: monospace;
+  }
 
-#output ul {
+  textarea {
+    width: 100%;
+    height: 220px;
+    background: #3d3838;
+    color: white;
+    border: none;
+    padding: 10px;
+    box-sizing: border-box;
+    font-family: monospace;
+    font-size: 14px;
+    resize: none;
+  }
+
+  .buttons {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+  }
+
+  button {
+    background: #4d4747;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    cursor: pointer;
+    font-size: 16px;
+    font-family: monospace;
+  }
+
+  button:hover {
+    background: #5a5454;
+  }
+
+  #copyStatus {
+    margin-left: 10px;
+    color: #ccc;
+    font-size: 14px;
+  }
+
+  #output {
+    background: #3d3838;
+    padding: 10px;
+    min-height: 200px;
+    white-space: pre-wrap;
+    font-family: monospace;
+    overflow-x: auto;
+    box-sizing: border-box;
+  }
+
+  #output ul {
     margin: 0;
     padding-left: 20px;
-}
+  }
 
-#output li {
-    color: white;
+  #output li {
     margin-bottom: 4px;
-}
+  }
+
+  /* DARK SCROLLBAR (MATCH OTHER SCRIPTS) */
+  textarea::-webkit-scrollbar,
+  #output::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  textarea::-webkit-scrollbar-track,
+  #output::-webkit-scrollbar-track {
+    background: #2a2525;
+  }
+
+  textarea::-webkit-scrollbar-thumb,
+  #output::-webkit-scrollbar-thumb {
+    background: #4a4040;
+    border-radius: 8px;
+    border: 2px solid #2a2525;
+  }
+
+  textarea::-webkit-scrollbar-thumb:hover,
+  #output::-webkit-scrollbar-thumb:hover {
+    background: #5a4d4d;
+  }
+
+  textarea,
+  #output {
+    scrollbar-width: thin;
+    scrollbar-color: #4a4040 #2a2525;
+  }
 </style>
 </head>
 
 <body>
 
-<h2>Outfit List Maker</h2>
+<div class="wrapper">
 
-<input type="file" id="upload" multiple>
+  <h2>Outfit List Maker</h2>
 
-<br><br>
+  <input type="file" id="upload" multiple>
 
-<textarea id="filenameInput"
-placeholder="Paste file names here (one per line)..."></textarea>
+  <br><br>
 
-<br><br>
+  <textarea id="filenameInput"
+  placeholder="Paste file names here (one per line)..."></textarea>
 
-<button onclick="generateList()">Generate List</button>
-<button onclick="copyList()">Copy</button>
-<span id="copyStatus"></span>
+  <div class="buttons">
+    <button onclick="generateList()">Generate</button>
+    <button onclick="copyList()">Copy</button>
+    <span id="copyStatus"></span>
+  </div>
 
-<div id="output"></div>
+  <div id="output"></div>
+
+</div>
 
 <script>
 const orderedIDs = [
@@ -108,18 +191,15 @@ function extractID(name) {
 function generateList() {
     const foundIDs = [];
 
-    // FILE INPUT
     const files = document.getElementById("upload").files;
 
     for (const file of files) {
         const id = extractID(file.name);
-
         if (id && orderedIDs.includes(id) && !foundIDs.includes(id)) {
             foundIDs.push(id);
         }
     }
 
-    // TEXT INPUT
     const text = document.getElementById("filenameInput").value;
 
     const lines = text
@@ -129,13 +209,11 @@ function generateList() {
 
     for (const line of lines) {
         const id = extractID(line);
-
         if (id && orderedIDs.includes(id) && !foundIDs.includes(id)) {
             foundIDs.push(id);
         }
     }
 
-    // BUILD LIST
     const htmlList = orderedIDs
         .filter(id => foundIDs.includes(id))
         .map(id => `<li>${idMap[id]}</li>`)
