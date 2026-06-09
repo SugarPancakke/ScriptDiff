@@ -23,88 +23,108 @@ body {
 h2 {
   text-align: center;
   font-weight: normal;
-  margin-bottom: 15px;
 }
 
-/* TEXT INPUT */
+/* SAME LAYOUT STYLE AS DIFF TOOL */
+.container {
+  display: flex;
+  gap: 20px;
+}
+
+.box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 textarea {
   width: 100%;
   height: 320px;
   background: #3d3838;
   color: white;
-  border: none;
-  padding: 10px;
-  box-sizing: border-box;
   font-family: monospace;
   font-size: 14px;
+  white-space: nowrap;
+  overflow-x: auto;
+  padding: 10px;
+  box-sizing: border-box;
   resize: none;
+  border: none;
+  outline: none;
 }
 
-/* BUTTONS */
-.buttons {
-  display: flex;
-  gap: 10px;
-  margin: 20px 0;
-}
-
+/* BUTTON (same as diff tool style) */
 button {
   background: #4d4747;
   color: white;
   border: none;
+  margin: 20px auto;
   padding: 12px 30px;
   cursor: pointer;
   font-size: 16px;
   font-family: monospace;
+  display: block;
 }
 
 button:hover {
   background: #5a5454;
 }
 
-#copyStatus {
-  font-size: 14px;
-  color: #ccc;
-  margin-left: 10px;
+/* RESULTS (MATCH DIFF TOOL STYLE) */
+.results {
+  display: flex;
+  justify-content: center;
+  gap: 60px;
+  margin-top: 20px;
 }
 
-/* OUTPUT (same style as diff tool viewer) */
-#output {
+.result-box {
+  flex: 1;
+  max-width: 300px;
+}
+
+ul {
   background: #3d3838;
-  padding: 10px;
+  padding: 15px;
   min-height: 200px;
-  white-space: pre-wrap;
-  font-family: monospace;
+  white-space: nowrap;
   overflow-x: auto;
-  box-sizing: border-box;
-  font-size: 14px;
+  font-family: monospace;
+  list-style-position: inside;
+  margin: 0;
+  border: none;
 }
 
-/* SCROLLBARS (MATCH ALL TOOLS) */
+h3 {
+  font-weight: normal;
+}
+
+/* ===== SCROLLBARS (SAME AS DIFF TOOL) ===== */
 textarea::-webkit-scrollbar,
-#output::-webkit-scrollbar {
+ul::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 
 textarea::-webkit-scrollbar-track,
-#output::-webkit-scrollbar-track {
+ul::-webkit-scrollbar-track {
   background: #2a2525;
 }
 
 textarea::-webkit-scrollbar-thumb,
-#output::-webkit-scrollbar-thumb {
+ul::-webkit-scrollbar-thumb {
   background: #4a4040;
   border-radius: 8px;
   border: 2px solid #2a2525;
 }
 
 textarea::-webkit-scrollbar-thumb:hover,
-#output::-webkit-scrollbar-thumb:hover {
+ul::-webkit-scrollbar-thumb:hover {
   background: #5a4d4d;
 }
 
 textarea,
-#output {
+ul {
   scrollbar-width: thin;
   scrollbar-color: #4a4040 #2a2525;
 }
@@ -117,16 +137,29 @@ textarea,
 
   <h2>Outfit List Maker</h2>
 
-  <textarea id="filenameInput"
-  placeholder="Paste file names (one per line)..."></textarea>
+  <!-- TWO INPUT BOXES (like diff tool structure, but only one used) -->
+  <div class="container">
 
-  <div class="buttons">
-    <button onclick="generateList()">Generate</button>
-    <button onclick="copyList()">Copy</button>
-    <span id="copyStatus"></span>
+    <div class="box">
+      <h3>File Names</h3>
+      <textarea id="filenameInput" placeholder="Paste file names (one per line)"></textarea>
+    </div>
+
+    <div class="box">
+      <h3>Output Preview</h3>
+      <ul id="outputList"></ul>
+    </div>
+
   </div>
 
-  <div id="output"></div>
+  <button onclick="generateList()">Generate</button>
+
+  <div class="results">
+    <div class="result-box">
+      <h3>Result</h3>
+      <ul id="finalList"></ul>
+    </div>
+  </div>
 
 </div>
 
@@ -154,37 +187,32 @@ function extractID(name) {
 }
 
 function generateList() {
-  const foundIDs = [];
+
+  const found = [];
 
   const lines = document.getElementById("filenameInput").value
-    .split(/\r?\n/)
+    .split("\n")
     .map(x => x.trim())
     .filter(Boolean);
 
   for (const line of lines) {
     const id = extractID(line);
-    if (id && orderedIDs.includes(id) && !foundIDs.includes(id)) {
-      foundIDs.push(id);
+    if (id && orderedIDs.includes(id) && !found.includes(id)) {
+      found.push(id);
     }
   }
 
   const formatted = orderedIDs
-    .filter(id => foundIDs.includes(id))
-    .map(id => `• ${idMap[id]}`)
-    .join("\n");
+    .filter(id => found.includes(id))
+    .map(id => `• ${idMap[id]}`);
 
-  document.getElementById("output").textContent = formatted;
-}
+  // left preview (like diff tool behavior)
+  document.getElementById("outputList").innerHTML =
+    formatted.map(x => `<li>${x}</li>`).join("");
 
-function copyList() {
-  const text = document.getElementById("output").textContent;
-  if (!text.trim()) return;
-
-  navigator.clipboard.writeText(text);
-
-  const s = document.getElementById("copyStatus");
-  s.textContent = "Copied!";
-  setTimeout(() => s.textContent = "", 1200);
+  // final output
+  document.getElementById("finalList").innerHTML =
+    formatted.map(x => `<li>${x}</li>`).join("");
 }
 </script>
 
